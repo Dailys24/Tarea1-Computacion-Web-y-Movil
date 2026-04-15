@@ -1337,6 +1337,9 @@ module.exports = {
   sortUsers: sortUsers,
   sortOrders: sortOrders,
   //se actualiza el formateo de fecha 
+  formatDate: formatearFecha,
+  formatDate2: formatearFecha,
+  formatDate3: formatearFecha,
   formatearFecha: formatearFecha,
   utils: utils
 };
