@@ -13,7 +13,7 @@ const datosDePrueba = {
 const resultadoRegistro = authService.procesarRegistro(datosDePrueba);
 console.log(resultadoRegistro);
 
-console.log("\n=== PRUEBA DE LOGIN (TAREA 2) ===");
+console.log("\nPrueba de login");
 
 //Simulacion a juan perez equivocándose de clave 3 veces
 console.log("Intento 1:", authService.procesarLogin("juan@mail.com", "claveMala"));
