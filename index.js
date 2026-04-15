@@ -1,10 +1,10 @@
 //index.js
 const authService = require('./src/services/auth/authService');
 
-console.log("=== PRUEBA DE REGISTRO ===");
+console.log("Prueba de registro");
 const datosDePrueba = {
     nombre: "juan",
-    email: "juan@utem.cl",
+    email: "juan@mail.cl",
     pass: "12345678",
     passConfirm: "12345678",
     rut: "12345678-9",
