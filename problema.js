@@ -1261,12 +1261,24 @@ function sortOrders(arr6, field3, order3) {
 
 function formatearFecha(fecha, incluirHora) {
   var d = fecha;
-   //aqui se valida si la fecha es un string, (tiene se ser "2026-04-15", año-mes-dia )
+   //aqui se valida si la fecha es un string, (tiene quee ser con el formato año-mes-dia )
   if (typeof fecha === "string") {
+    // Solucion sugerida por revision para evitar que JavaScript reste un dia por la zona horaria UTC
+    if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+      var partes = fecha.split("-");
+      var anioLocal = parseInt(partes[0], 10);
+      var mesLocal = parseInt(partes[1], 10);
+      var diaLocal = parseInt(partes[2], 10);
+      d = new Date(anioLocal, mesLocal - 1, diaLocal);
+    } else {
+      d = new Date(fecha);
+    }
+  } else {
+    // Si mandan algo vacio (null), forzamos a que sea fecha para que no explote abajo
     d = new Date(fecha);
   }
-
-  // Validar si java entiende La fecha 
+//hasta aqui arriba fue sugerido en revisión
+  // Validar si javasript entiende La fecha 
   if (isNaN(d.getTime())) {
     return "Fecha inválida";
   }
@@ -1275,7 +1287,7 @@ function formatearFecha(fecha, incluirHora) {
   var mes = d.getMonth() + 1; // se agrega +1 porque en java se empieza a contar desde 0
   var anio = d.getFullYear();
     
-  //es para que se vea mejor si por ejemplo es un diá 5 se vea 05
+  //es para que se vea mejor si por ejemplo es un día 5 se vea 05
   if (dia < 10) { dia = "0" + dia; }
   if (mes < 10) { mes = "0" + mes; }
 
