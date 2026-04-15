@@ -1,8 +1,7 @@
 //src/services/auth/authService.js
 
-//Función con Responsabilidad Única: Solo valida y no hace nada más.
 function validarDatosRegistro(formData) {
-    const errors = []; 
+    const errors = [];
     
     if (!formData.nombre || formData.nombre === "" || formData.nombre.length < 3) {
         errors.push("Nombre invalido");
@@ -23,22 +22,21 @@ function validarDatosRegistro(formData) {
         errors.push("Telefono invalido");
     }
     
-    return errors;
+    //Retornar los errores encontrados
+    return errors; 
 }
 
-//Función principal que orquesta todo el proceso
 function procesarRegistro(formData) {
     const errores = validarDatosRegistro(formData);
     
+    //Si hay errores, retornar un objeto con el estado de error y los mensajes
     if (errores.length > 0) {
         return { ok: false, errores: errores };
     }
 
-    //Crear el usuario de verdad
     return { ok: true, msg: "Validación limpia y exitosa" };
 }
 
-//Exportamos la función principal para que el resto del sistema la use
 module.exports = {
     procesarRegistro
 };
