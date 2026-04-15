@@ -1,42 +1,131 @@
 //src/services/auth/authService.js
 
-function validarDatosRegistro(formData) {
+//Simulación de base de datos en memoria para probar el login
+const dbUsers = [
+    { id: 1, nombre: "Juan Perez", email: "juan@mail.com", pass: "1234", tipo: "admin", puntos: 150, activo: true, intentos: 0, bloqueado: false, ultimoLogin: null },
+    { id: 4, nombre: "Ana Martinez", email: "ana@mail.com", pass: "ana2024", tipo: "cliente", puntos: 50, activo: false, intentos: 3, bloqueado: true, ultimoLogin: null }
+];
+
+//Modulo de registro
+
+
+function validarDatosRegistro(formData) 
+{
     const errors = [];
     
-    if (!formData.nombre || formData.nombre === "" || formData.nombre.length < 3) {
+    if (!formData.nombre || formData.nombre === "" || formData.nombre.length < 3) 
+    {
         errors.push("Nombre invalido");
     }
-    if (!formData.email || formData.email.indexOf("@") === -1) {
+    if (!formData.email || formData.email.indexOf("@") === -1) 
+    {
         errors.push("Email invalido");
     }
-    if (!formData.pass || formData.pass.length < 8) {
+    if (!formData.pass || formData.pass.length < 8) 
+    {
         errors.push("Password debe tener minimo 8 caracteres");
     }
-    if (formData.pass !== formData.passConfirm) {
+    if (formData.pass !== formData.passConfirm) 
+    {
         errors.push("Passwords no coinciden");
     }
-    if (!formData.rut || formData.rut.length < 8) {
+    if (!formData.rut || formData.rut.length < 8) 
+    {
         errors.push("RUT invalido");
     }
-    if (!formData.telefono || formData.telefono.length < 9) {
+    if (!formData.telefono || formData.telefono.length < 9) 
+    {
         errors.push("Telefono invalido");
     }
     
-    //Retornar los errores encontrados
     return errors; 
+}
+
+function crearUsuario(formData) 
+{
+    return {
+        id: Math.floor(Math.random() * 9000) + 1000,
+        nombre: formData.nombre,
+        email: formData.email,
+        pass: formData.pass,
+        rut: formData.rut,
+        telefono: formData.telefono,
+        tipo: "cliente",
+        puntos: 0,
+        descuento: 0,
+        historial: [],
+        carrito: [],
+        activo: true,
+        intentos: 0,
+        bloqueado: false,
+        ultimoLogin: null,
+        createdAt: new Date().toISOString()
+    };
 }
 
 function procesarRegistro(formData) {
     const errores = validarDatosRegistro(formData);
     
-    //Si hay errores, retornar un objeto con el estado de error y los mensajes
-    if (errores.length > 0) {
+    if (errores.length > 0)
+    {
         return { ok: false, errores: errores };
     }
 
-    return { ok: true, msg: "Validación limpia y exitosa" };
+    const nuevoUsuario = crearUsuario(formData);
+    return { ok: true, msg: "Registro exitoso", user: nuevoUsuario };
 }
 
+//Modulo de login
+
+function procesarLogin(email, password) 
+{
+    //Buscar al usuario solo por email
+    const usuario = dbUsers.find(u => u.email === email);
+
+    if (!usuario) 
+    {
+        return { ok: false, msg: "Usuario no encontrado" };
+    }
+
+    //Manejar estados independientes
+    if (usuario.bloqueado) 
+    {
+        return { ok: false, msg: "Usuario bloqueado por múltiples intentos fallidos" };
+    }
+
+    if (!usuario.activo) 
+    {
+        return { ok: false, msg: "Usuario inactivo. Contacte a soporte" };
+    }
+
+    //Validar la contraseña y sumar intentos si falla
+    if (usuario.pass !== password) 
+    {
+        usuario.intentos++; 
+        
+        if (usuario.intentos >= 3) 
+        {
+            usuario.bloqueado = true;
+            return { ok: false, msg: "Contraseña incorrecta. Cuenta bloqueada por seguridad" };
+        }
+        return { ok: false, msg: `Contraseña incorrecta. Intentos restantes: ${3 - usuario.intentos}` };
+    }
+
+    //Login exitoso: Resetear intentos y generar sesión
+    usuario.intentos = 0; 
+    usuario.ultimoLogin = new Date().toISOString();
+    const token = "tkn_" + Math.random().toString(36).substring(2, 11);
+
+    return {
+        ok: true,
+        msg: "Login exitoso",
+        token: token,
+        user: usuario
+    };
+}
+
+//Exportar ambas funciones para ser usadas en index.js
 module.exports = {
-    procesarRegistro
+    procesarRegistro,
+    procesarLogin
 };
