@@ -1,10 +1,18 @@
 //src/services/auth/authService.js
 const sessionService = require('./sessionService');
+const crypto = require('crypto'); //Modulo nativo de Node.js para criptografia segura
 
-//Simulación de base de datos en memoria para probar el login
+//Funcion para crear el hash de la contraseña
+function hashearPassword(password) 
+{
+    //Usamos el algoritmo SHA-256 para transformar el texto plano
+    return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+//Simulacion de base de datos (ahora las contraseñas estan hasheadas)
 const dbUsers = [
-    { id: 1, nombre: "Juan Perez", email: "juan@mail.com", pass: "1234", tipo: "admin", puntos: 150, activo: true, intentos: 0, bloqueado: false, ultimoLogin: null },
-    { id: 4, nombre: "Ana Martinez", email: "ana@mail.com", pass: "ana2024", tipo: "cliente", puntos: 50, activo: false, intentos: 3, bloqueado: true, ultimoLogin: null }
+    { id: 1, nombre: "Juan Perez", email: "juan@mail.com", pass: hashearPassword("1234"), tipo: "admin", puntos: 150, activo: true, intentos: 0, bloqueado: false, ultimoLogin: null },
+    { id: 4, nombre: "Ana Martinez", email: "ana@mail.com", pass: hashearPassword("ana2024"), tipo: "cliente", puntos: 50, activo: false, intentos: 3, bloqueado: true, ultimoLogin: null }
 ];
 
 //Modulo de registro
@@ -47,7 +55,7 @@ function crearUsuario(formData)
         id: Math.floor(Math.random() * 9000) + 1000,
         nombre: formData.nombre,
         email: formData.email,
-        pass: formData.pass,
+        pass: hashearPassword(formData.pass), //Guardamos el HASH, NUNCA el texto plano
         rut: formData.rut,
         telefono: formData.telefono,
         tipo: "cliente",
@@ -99,8 +107,11 @@ function procesarLogin(email, password)
         return { ok: false, msg: "Usuario inactivo. Contacte a soporte" };
     }
 
-    //Validar la contraseña y sumar intentos si falla
-    if (usuario.pass !== password) 
+    //Transformar la contraseña ingresada a hash para poder compararla
+    const hashIngresado = hashearPassword(password);
+
+    //Validar comparando HASH contra HASH
+    if (usuario.pass !== hashIngresado) 
     {
         usuario.intentos++; 
         
@@ -112,11 +123,10 @@ function procesarLogin(email, password)
         return { ok: false, msg: `Contraseña incorrecta. Intentos restantes: ${3 - usuario.intentos}` };
     }
 
-    //Login exitoso: Resetear intentos y generar sesion limpia (Tarea 3)
+    //Login exitoso: Resetear intentos y generar sesion limpia
     usuario.intentos = 0; 
     usuario.ultimoLogin = new Date().toISOString();
     
-    //Usar el nuevo servicio de sesiones para generar el token real
     const tokenSeguro = sessionService.crearSesion(usuario);
 
     return {
