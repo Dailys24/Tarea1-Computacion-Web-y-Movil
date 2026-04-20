@@ -1,4 +1,5 @@
 //src/services/auth/authService.js
+const sessionService = require('./sessionService');
 
 //Simulación de base de datos en memoria para probar el login
 const dbUsers = [
@@ -7,7 +8,6 @@ const dbUsers = [
 ];
 
 //Modulo de registro
-
 
 function validarDatosRegistro(formData) 
 {
@@ -63,7 +63,8 @@ function crearUsuario(formData)
     };
 }
 
-function procesarRegistro(formData) {
+function procesarRegistro(formData) 
+{
     const errores = validarDatosRegistro(formData);
     
     if (errores.length > 0)
@@ -111,20 +112,22 @@ function procesarLogin(email, password)
         return { ok: false, msg: `Contraseña incorrecta. Intentos restantes: ${3 - usuario.intentos}` };
     }
 
-    //Login exitoso: Resetear intentos y generar sesión
+    //Login exitoso: Resetear intentos y generar sesion limpia (Tarea 3)
     usuario.intentos = 0; 
     usuario.ultimoLogin = new Date().toISOString();
-    const token = "tkn_" + Math.random().toString(36).substring(2, 11);
+    
+    //Usar el nuevo servicio de sesiones para generar el token real
+    const tokenSeguro = sessionService.crearSesion(usuario);
 
     return {
         ok: true,
         msg: "Login exitoso",
-        token: token,
-        user: usuario
+        token: tokenSeguro,
+        user: { id: usuario.id, nombre: usuario.nombre, email: usuario.email }
     };
 }
 
-//Exportar ambas funciones para ser usadas en index.js
+//Exportar las funciones para ser usadas en index.js
 module.exports = {
     procesarRegistro,
     procesarLogin

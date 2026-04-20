@@ -1,27 +1,37 @@
 //index.js
 const authService = require('./src/services/auth/authService');
+const sessionService = require('./src/services/auth/sessionService');
 
-console.log("=== PRUEBA DE REGISTRO ===");
-const datosDePrueba = {
-    nombre: "juan",
-    email: "juan@utem.cl",
+console.log("=== PRUEBA DE REGISTRO Y LOGIN CON SESIONES ===");
+
+//Prueba de registro
+const datosRegistro = {
+    nombre: "Angelo",
+    email: "angelo@utem.cl",
     pass: "12345678",
     passConfirm: "12345678",
     rut: "12345678-9",
     telefono: "912345678"
 };
-const resultadoRegistro = authService.procesarRegistro(datosDePrueba);
-console.log(resultadoRegistro);
+console.log("Registro:", authService.procesarRegistro(datosRegistro));
 
-console.log("\n=== PRUEBA DE LOGIN (TAREA 2) ===");
+//Prueba de login exitoso para generar sesion
+const resultadoLogin = authService.procesarLogin("juan@mail.com", "1234");
+console.log("\nResultado Login Juan:", resultadoLogin);
 
-//Simulacion a juan perez equivocándose de clave 3 veces
-console.log("Intento 1:", authService.procesarLogin("juan@mail.com", "claveMala"));
-console.log("Intento 2:", authService.procesarLogin("juan@mail.com", "pepito"));
-console.log("Intento 3 (¡Bloqueo!):", authService.procesarLogin("juan@mail.com", "123"));
+if (resultadoLogin.ok) 
+{
+    const elToken = resultadoLogin.token;
 
-//Ana Martinez ya estaba bloqueada en la base de datos
-console.log("\nCuenta Ana:", authService.procesarLogin("ana@mail.com", "ana2024"));
+    //Probar que podemos obtener los datos de la sesion usando el token
+    const datosSesion = sessionService.obtenerSesion(elToken);
+    console.log("\nDatos recuperados de la sesion:", datosSesion);
 
-//Juan perez intenta entrar con su clave real (1234), pero ya está bloqueado
-console.log("\nIntento Juan (Clave correcta, pero tarde):", authService.procesarLogin("juan@mail.com", "1234"));
+    //Probar cerrar la sesion
+    console.log("\nCerrando sesion...");
+    sessionService.cerrarSesion(elToken);
+
+    //Verificar que la sesion ya no existe
+    const sesionFinal = sessionService.obtenerSesion(elToken);
+    console.log("Estado de sesion despues de cerrar (debe ser null):", sesionFinal);
+}
