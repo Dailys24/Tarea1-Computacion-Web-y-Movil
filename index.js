@@ -35,3 +35,14 @@ if (resultadoLogin.ok)
     const sesionFinal = sessionService.obtenerSesion(elToken);
     console.log("Estado de sesion despues de cerrar (debe ser null):", sesionFinal);
 }
+
+//Pruebas del resto del equipo
+console.log("\n=== PRUEBA DE BLOQUEOS ===");
+
+//Simulacion a juan perez equivocandose de clave 3 veces
+console.log("Intento 1:", authService.procesarLogin("juan@mail.com", "claveMala"));
+console.log("Intento 2:", authService.procesarLogin("juan@mail.com", "pepito"));
+console.log("Intento 3 (Bloqueo):", authService.procesarLogin("juan@mail.com", "123"));
+
+//Juan perez intenta entrar con su clave real (1234), pero ya esta bloqueado
+console.log("\nIntento Juan (Clave correcta, pero tarde):", authService.procesarLogin("juan@mail.com", "1234"));
