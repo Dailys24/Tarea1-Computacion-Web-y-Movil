@@ -1370,5 +1370,8 @@ module.exports = {
   sortProducts: sortProducts,
   sortUsers: sortUsers,
   sortOrders: sortOrders,
- 
+  formatDate: formatDate,
+  formatDate2: formatDate2,
+  formatDate3: formatDate3,
+  utils: utils
 };
