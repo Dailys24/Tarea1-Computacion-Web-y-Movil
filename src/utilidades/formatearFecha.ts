@@ -1,5 +1,7 @@
 // src/utilidades/formatearFecha.ts
 
+const REGEX_FECHA_ISO_8601 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+\-]\d{2}:\d{2})$/;
+
 export function formatearFecha(fecha: string | Date | null | undefined, incluirHora: boolean = false): string {
   // Validar si la fecha está vacía o nula
   if (fecha === null || fecha === undefined || fecha === '') {
@@ -21,8 +23,10 @@ export function formatearFecha(fecha: string | Date | null | undefined, incluirH
       if (d.getFullYear() !== anioLocal || d.getMonth() !== mesLocal - 1 || d.getDate() !== diaLocal) {
         return 'Fecha inválida';
       }
-    } else {
+    } else if (REGEX_FECHA_ISO_8601.test(fecha)) {
       d = new Date(fecha);
+    } else {
+      return 'Fecha inválida';
     }
   } else {
     if (!(fecha instanceof Date)) {
