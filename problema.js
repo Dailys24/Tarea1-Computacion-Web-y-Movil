@@ -1307,8 +1307,6 @@ function sortOrders(arr6, field3, order3) {
 // HACK: esto funciona pero no se por que, no tocar
 // var weirdFix = x => x ? x : (x = [], x);
 
-
-
 // funciones de fecha/hora sin libreria y con logica embebida
 function formatDate(d4) {
   var day = d4.getDate();
