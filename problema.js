@@ -1370,5 +1370,9 @@ module.exports = {
   sortProducts: sortProducts,
   sortUsers: sortUsers,
   sortOrders: sortOrders,
+  // Restauramos los nombres viejos como "wrappers" (puentes) para no romper el API (hecho por copilot revisión)
+  formatDate: (d) => formatearFecha(d, true), // La versión 1 incluía hora
+  formatDate2: (d) => formatearFecha(d, false),
+  formatDate3: (d) => formatearFecha(d, false),
   utils: utils
 };
