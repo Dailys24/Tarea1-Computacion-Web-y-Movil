@@ -2,7 +2,7 @@
 const sessionService = require('./sessionService');
 const crypto = require('crypto'); //Modulo nativo de Node.js para criptografia segura
 // Como se está  usando require .js y validaciones .ts en este archivo, lo importamos así:
-const { validarEmail, validarPassword, validarRut } = require('../../utilidades/validaciones.ts');
+const { validarEmail, validarPassword, validarRut, validarNombre, validarTelefono } = require('../../utilidades/validaciones.js');
 
 //Funcion para crear el hash de la contraseña
 function hashearPassword(password) 
@@ -22,7 +22,14 @@ const dbUsers = [
 function validarDatosRegistro(formData) 
 {
     const errors = [];
+    
+    // Copilot sugirió asegurarse de que formData exista primero
+    if (!formData) return ["Datos del formulario vacíos"];
 
+    // Todas las validaciones que Copilot notó que faltaban
+    if (!validarNombre(formData.nombre)) {
+        errors.push("Nombre invalido");
+    }
     if (!validarEmail(formData.email)) {
         errors.push("Email invalido");
     }
@@ -35,7 +42,10 @@ function validarDatosRegistro(formData)
     if (!validarRut(formData.rut)) {
         errors.push("RUT invalido");
     }
-
+    if (!validarTelefono(formData.telefono)) {
+        errors.push("Telefono invalido");
+    }
+    
     return errors; 
 }
 
