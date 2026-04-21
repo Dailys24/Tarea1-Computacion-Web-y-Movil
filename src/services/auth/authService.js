@@ -1,6 +1,8 @@
 //src/services/auth/authService.js
 const sessionService = require('./sessionService');
 const crypto = require('crypto'); //Modulo nativo de Node.js para criptografia segura
+// Como se está  usando require .js y validaciones .ts en este archivo, lo importamos así:
+const { validarEmail, validarPassword, validarRut } = require('../../utilidades/validaciones.ts');
 
 //Funcion para crear el hash de la contraseña
 function hashearPassword(password) 
@@ -20,32 +22,20 @@ const dbUsers = [
 function validarDatosRegistro(formData) 
 {
     const errors = [];
-    
-    if (!formData.nombre || formData.nombre === "" || formData.nombre.length < 3) 
-    {
-        errors.push("Nombre invalido");
-    }
-    if (!formData.email || formData.email.indexOf("@") === -1) 
-    {
+
+    if (!validarEmail(formData.email)) {
         errors.push("Email invalido");
     }
-    if (!formData.pass || formData.pass.length < 8) 
-    {
+    if (!validarPassword(formData.pass)) {
         errors.push("Password debe tener minimo 8 caracteres");
     }
-    if (formData.pass !== formData.passConfirm) 
-    {
+    if (formData.pass !== formData.passConfirm) {
         errors.push("Passwords no coinciden");
     }
-    if (!formData.rut || formData.rut.length < 8) 
-    {
+    if (!validarRut(formData.rut)) {
         errors.push("RUT invalido");
     }
-    if (!formData.telefono || formData.telefono.length < 9) 
-    {
-        errors.push("Telefono invalido");
-    }
-    
+
     return errors; 
 }
 
