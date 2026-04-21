@@ -25,7 +25,9 @@ export function formatearFecha(fecha: string | Date | null | undefined, incluirH
       d = new Date(fecha);
     }
   } else {
-    // Si no es string (y ya descartamos null/undefined arriba), entonces obligatoriamente es Date
+    if (!(fecha instanceof Date)) {
+      return 'Fecha inválida';
+    }
     d = fecha;
   }
 
