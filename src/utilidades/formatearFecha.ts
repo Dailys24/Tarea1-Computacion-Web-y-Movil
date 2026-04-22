@@ -3,30 +3,17 @@
 const FECHA_INVALIDA = 'Fecha inválida';
 
 /**
- * Regex con grupos de captura para validar y extraer componentes de ISO 8601:
- * YYYY-MM-DDTHH:mm[:ss[.ms]] (Z o ±HH:mm)
+ * Regex con grupos de captura para validar y extraer componentes de ISO 8601.
+ * Valida estrictamente horas (00-23) y minutos (00-59) en el offset.
  */
-const REGEX_FECHA_ISO_8601 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(?:Z|[+\-](?:\d{2}):(?:\d{2}))$/;
+const REGEX_FECHA_ISO_8601 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(?:Z|[+\-](?:[01]\d|2[0-3]):[0-5]\d)$/;
 
-/**
- * Verifica si un año es bisiesto.
- */
 const esBisiesto = (anio: number) => (anio % 4 === 0 && anio % 100 !== 0) || anio % 400 === 0;
 
-/**
- * Obtiene los días que tiene un mes específico.
- */
 const obtenerDiasDelMes = (mes: number, anio: number) => {
   return [31, esBisiesto(anio) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mes - 1];
 };
 
-/**
- * Formatea una fecha a formato DD/MM/YYYY (opcionalmente con HH:mm:ss).
- *
- * NOTA TÉCNICA: Esta función procesa la fecha para su visualización en la zona
- * horaria local del sistema. Valida rangos de calendario (incluyendo bisiestos)
- * antes de la conversión para asegurar la integridad de los datos.
- */
 export function formatearFecha(fecha: string | Date | null | undefined, incluirHora: boolean = false): string {
   if (fecha === null || fecha === undefined) {
     return FECHA_INVALIDA;
@@ -40,7 +27,6 @@ export function formatearFecha(fecha: string | Date | null | undefined, incluirH
     const fechaLimpia = fecha.trim();
     if (fechaLimpia === '') return FECHA_INVALIDA;
 
-    // Caso 1: YYYY-MM-DD
     if (/^\d{4}-\d{2}-\d{2}$/.test(fechaLimpia)) {
       const [anio, mes, dia] = fechaLimpia.split('-').map(Number);
       if (mes < 1 || mes > 12 || dia < 1 || dia > obtenerDiasDelMes(mes, anio)) {
@@ -48,8 +34,7 @@ export function formatearFecha(fecha: string | Date | null | undefined, incluirH
       }
       d = new Date(anio, mes - 1, dia);
       d.setFullYear(anio);
-    }
-    // Caso 2: ISO 8601 (Validación lógica de componentes)
+    } 
     else {
       const match = fechaLimpia.match(REGEX_FECHA_ISO_8601);
       if (match) {
@@ -67,7 +52,6 @@ export function formatearFecha(fecha: string | Date | null | undefined, incluirH
         ) {
           return FECHA_INVALIDA;
         }
-
         d = new Date(fechaLimpia);
       } else {
         return FECHA_INVALIDA;

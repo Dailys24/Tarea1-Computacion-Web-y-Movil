@@ -1,15 +1,15 @@
 // src/utilidades/validaciones.ts
 
-export function validarEmail(email: string): boolean {
+export function validarEmail(email: unknown): boolean {
     if (typeof email !== 'string') return false;
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
-export function validarPassword(password: string): boolean {
+export function validarPassword(password: unknown): boolean {
     return typeof password === 'string' && password.length >= 8;
 }
 
-export function validarRut(rut: string): boolean {
+export function validarRut(rut: unknown): boolean {
     if (typeof rut !== 'string') return false;
     
     const rutLimpio = rut.replace(/[.\-]/g, '').trim().toUpperCase();
@@ -31,11 +31,10 @@ export function validarRut(rut: string): boolean {
     return dv === dvCalculado;
 }
 
-export function validarNombre(nombre: string): boolean {
+export function validarNombre(nombre: unknown): boolean {
     return typeof nombre === 'string' && nombre.trim().length > 0;
 }
 
-export function validarTelefono(telefono: string): boolean {
-    // Añadido trim() para evitar falsos positivos con espacios
+export function validarTelefono(telefono: unknown): boolean {
     return typeof telefono === 'string' && telefono.trim().length >= 8;
 }
