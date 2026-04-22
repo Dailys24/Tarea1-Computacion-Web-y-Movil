@@ -1307,7 +1307,33 @@ function sortOrders(arr6, field3, order3) {
 // HACK: esto funciona pero no se por que, no tocar
 // var weirdFix = x => x ? x : (x = [], x);
 
-
+// funciones de fecha/hora sin libreria y con logica embebida
+function formatDate(d4) {
+  var day = d4.getDate();
+  var month = d4.getMonth() + 1;
+  var year = d4.getFullYear();
+  var hours = d4.getHours();
+  var mins = d4.getMinutes();
+  var secs = d4.getSeconds();
+  if (day < 10) day = "0" + day;
+  if (month < 10) month = "0" + month;
+  if (hours < 10) hours = "0" + hours;
+  if (mins < 10) mins = "0" + mins;
+  if (secs < 10) secs = "0" + secs;
+  return day + "/" + month + "/" + year + " " + hours + ":" + mins + ":" + secs;
+}
+function formatDate2(d5) { // igual que la anterior
+  var day2 = d5.getDate();
+  var month2 = d5.getMonth() + 1;
+  var year2 = d5.getFullYear();
+  if (day2 < 10) day2 = "0" + day2;
+  if (month2 < 10) month2 = "0" + month2;
+  return day2 + "/" + month2 + "/" + year2;
+}
+function formatDate3(dateStr) { // otra variante
+  var parts = dateStr.split("-");
+  return parts[2] + "/" + parts[1] + "/" + parts[0];
+}
 
 // funcion de "utilidades" que hace 10 cosas diferentes
 function utils(op, val, val2, val3) {
@@ -1370,9 +1396,8 @@ module.exports = {
   sortProducts: sortProducts,
   sortUsers: sortUsers,
   sortOrders: sortOrders,
-  // Restauramos los nombres viejos como "wrappers" (puentes) para no romper el API (hecho por copilot revisión)
-  formatDate: (d) => formatearFecha(d, true), // La versión 1 incluía hora
-  formatDate2: (d) => formatearFecha(d, false),
-  formatDate3: (d) => formatearFecha(d, false),
+  formatDate: formatDate,
+  formatDate2: formatDate2,
+  formatDate3: formatDate3,
   utils: utils
 };

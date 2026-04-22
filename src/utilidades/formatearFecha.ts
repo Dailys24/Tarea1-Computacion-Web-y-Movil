@@ -1,7 +1,11 @@
 // src/utilidades/formatearFecha.ts
 
+<<<<<<< HEAD
 // Copilot: Extraemos el mensaje a una constante para no repetir
 const FECHA_INVALIDA = 'Fecha inválida';
+=======
+const REGEX_FECHA_ISO_8601 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+\-]\d{2}:\d{2})$/;
+>>>>>>> a03a9c06341e434f35cbd6a23973b85d441cf4af
 
 export function formatearFecha(fecha: string | Date | null | undefined, incluirHora: boolean = false): string {
   if (fecha === null || fecha === undefined) {
@@ -31,12 +35,25 @@ export function formatearFecha(fecha: string | Date | null | undefined, incluirH
       if (d.getFullYear() !== anioLocal || d.getMonth() !== mesLocal - 1 || d.getDate() !== diaLocal) {
         return FECHA_INVALIDA;
       }
+<<<<<<< HEAD
     } else {
       // Intento de parseo nativo para otros formatos ISO
       d = new Date(fechaLimpia);
     }
   } else {
     return FECHA_INVALIDA;
+=======
+    } else if (REGEX_FECHA_ISO_8601.test(fecha)) {
+      d = new Date(fecha);
+    } else {
+      return 'Fecha inválida';
+    }
+  } else {
+    if (!(fecha instanceof Date)) {
+      return 'Fecha inválida';
+    }
+    d = fecha;
+>>>>>>> a03a9c06341e434f35cbd6a23973b85d441cf4af
   }
 
   if (isNaN(d.getTime())) {
