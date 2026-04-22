@@ -33,7 +33,6 @@ export function ordenarArray<T>(
     const comparableA = normalizarValorOrdenable(valorA);
     const comparableB = normalizarValorOrdenable(valorB);
 
-    // Trampa anti-NaN: tratar NaN como null para enviarlo al final
     const isNaNA = typeof comparableA === 'number' && Number.isNaN(comparableA);
     const isNaNB = typeof comparableB === 'number' && Number.isNaN(comparableB);
 
@@ -66,13 +65,12 @@ export function paginarArray<T>(
   pagina: number,
   tamanoPagina: number
 ): ResultadoPaginado<T> {
-  // Manejo explícito de arreglos vacíos
   if (items.length === 0) {
     return {
       data: [],
       totalPaginas: 0,
       totalElementos: 0,
-      paginaActual: 0
+      paginaActual: 1 // Consistencia para APIs y UIs
     };
   }
 
