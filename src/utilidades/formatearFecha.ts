@@ -39,22 +39,26 @@ export function formatearFecha(fecha: string | Date | null | undefined, incluirH
         return FECHA_INVALIDA;
       }
     } 
-    // Caso 2: ISO 8601 con validación de componentes
+    // Caso 2: ISO 8601 con validación de componentes para evitar normalización
     else {
       const match = fechaLimpia.match(REGEX_FECHA_ISO_8601);
       if (match) {
         d = new Date(fechaLimpia);
         
-        // Validamos que el objeto Date sea válido antes de comparar componentes
         if (Number.isNaN(d.getTime())) return FECHA_INVALIDA;
 
-        // Comprobamos rangos básicos para evitar normalización (ej. Mes 13, Hora 25)
-        const mes = parseInt(match[2], 10);
-        const dia = parseInt(match[3], 10);
-        const hora = parseInt(match[4], 10);
-        const min = parseInt(match[5], 10);
+        // Validamos que los componentes no hayan sido normalizados (ej: 31 de febrero -> 02 de marzo)
+        // Usamos los componentes UTC si el string es UTC para una comparación exacta
+        const esUTC = fechaLimpia.endsWith('Z');
+        const anioIn = parseInt(match[1], 10);
+        const mesIn = parseInt(match[2], 10);
+        const diaIn = parseInt(match[3], 10);
 
-        if (mes < 1 || mes > 12 || dia < 1 || dia > 31 || hora > 23 || min > 59) {
+        const anioOut = esUTC ? d.getUTCFullYear() : d.getFullYear();
+        const mesOut = (esUTC ? d.getUTCMonth() : d.getMonth()) + 1;
+        const diaOut = esUTC ? d.getUTCDate() : d.getDate();
+
+        if (anioIn !== anioOut || mesIn !== mesOut || diaIn !== diaOut) {
           return FECHA_INVALIDA;
         }
       } else {
@@ -65,7 +69,7 @@ export function formatearFecha(fecha: string | Date | null | undefined, incluirH
     return FECHA_INVALIDA;
   }
 
-  // Validación final usando Number.isNaN (Sugerencia de Copilot)
+  // Verificación de seguridad final para asegurar que el objeto Date es usable
   if (Number.isNaN(d.getTime())) {
     return FECHA_INVALIDA;
   }
