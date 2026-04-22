@@ -45,7 +45,9 @@ export function formatearFecha(fecha: string | Date | null | undefined, incluirH
       if (mes < 1 || mes > 12 || dia < 1 || dia > obtenerDiasDelMes(mes, anio)) {
         return FECHA_INVALIDA;
       }
+      // Evitamos el comportamiento de 0-99 -> 1900-1999 usando setFullYear
       d = new Date(anio, mes - 1, dia);
+      d.setFullYear(anio);
     } 
     // Caso 2: ISO 8601 (Validación lógica de componentes)
     else {
@@ -58,7 +60,6 @@ export function formatearFecha(fecha: string | Date | null | undefined, incluirH
         const min = parseInt(match[5], 10);
         const seg = match[6] ? parseInt(match[6], 10) : 0;
 
-        // Validamos rangos reales sin depender de la zona horaria
         if (
           mes < 1 || mes > 12 || 
           dia < 1 || dia > obtenerDiasDelMes(mes, anio) ||
@@ -82,7 +83,7 @@ export function formatearFecha(fecha: string | Date | null | undefined, incluirH
   
   const diaStr = d.getDate().toString().padStart(2, '0');
   const mesStr = (d.getMonth() + 1).toString().padStart(2, '0'); 
-  const anioStr = d.getFullYear().toString();
+  const anioStr = d.getFullYear().toString().padStart(4, '0');
 
   let resultado = `${diaStr}/${mesStr}/${anioStr}`;
 
