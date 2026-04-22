@@ -38,17 +38,15 @@ export function ordenarArray<T>(
     const isNaNB = typeof comparableB === 'number' && Number.isNaN(comparableB);
 
     if (isNaNA && isNaNB) return 0;
-    if (isNaNA) return 1; // Mueve el NaN al final
-    if (isNaNB) return -1; // Mueve el NaN al final
+    if (isNaNA) return 1; 
+    if (isNaNB) return -1; 
 
-    // Comparación segura para textos con locale fijo ('es') para determinismo
     if (typeof comparableA === 'string' && typeof comparableB === 'string') {
       return orden === 'asc' 
         ? comparableA.localeCompare(comparableB, 'es') 
         : comparableB.localeCompare(comparableA, 'es');
     }
 
-    // Fallback determinístico para tipos mixtos (ej. string vs number)
     if (typeof comparableA !== typeof comparableB) {
       const strA = String(comparableA);
       const strB = String(comparableB);
@@ -68,10 +66,20 @@ export function paginarArray<T>(
   pagina: number,
   tamanoPagina: number
 ): ResultadoPaginado<T> {
+  // Manejo explícito de arreglos vacíos
+  if (items.length === 0) {
+    return {
+      data: [],
+      totalPaginas: 0,
+      totalElementos: 0,
+      paginaActual: 0
+    };
+  }
+
   const paginaNormalizada = Number.isFinite(pagina) ? Math.max(1, Math.floor(pagina)) : 1;
   const tamanoNormalizado = Number.isFinite(tamanoPagina) ? Math.max(1, Math.floor(tamanoPagina)) : 1;
 
-  const totalPaginas = Math.max(1, Math.ceil(items.length / tamanoNormalizado));
+  const totalPaginas = Math.ceil(items.length / tamanoNormalizado);
   const paginaActual = Math.min(paginaNormalizada, totalPaginas);
 
   const inicio = (paginaActual - 1) * tamanoNormalizado;

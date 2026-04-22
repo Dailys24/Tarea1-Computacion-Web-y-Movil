@@ -5,8 +5,9 @@ const FECHA_INVALIDA = 'Fecha inválida';
 /**
  * Regex con grupos de captura para validar y extraer componentes de ISO 8601.
  * Valida estrictamente horas (00-23) y minutos (00-59) en el offset.
+ * La zona horaria (Z o offset) ahora es opcional.
  */
-const REGEX_FECHA_ISO_8601 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(?:Z|[+\-](?:[01]\d|2[0-3]):[0-5]\d)$/;
+const REGEX_FECHA_ISO_8601 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(?:Z|[+\-](?:[01]\d|2[0-3]):[0-5]\d)?$/;
 
 const esBisiesto = (anio: number) => (anio % 4 === 0 && anio % 100 !== 0) || anio % 400 === 0;
 
@@ -53,7 +54,7 @@ export function formatearFecha(fecha: string | Date | null | undefined, incluirH
           return FECHA_INVALIDA;
         }
         
-        // Para ISO 8601 con zona horaria explícita (Z u offset),
+        // Para ISO 8601 con zona horaria explícita (Z u offset) o locales sin zona,
         // se debe respetar el offset original al parsear.
         d = new Date(fechaLimpia);
       } else {
