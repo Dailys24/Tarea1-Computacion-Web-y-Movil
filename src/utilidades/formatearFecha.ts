@@ -1,20 +1,17 @@
 // src/utilidades/formatearFecha.ts
 
-/**
- * Mensaje de error centralizado para inconsistencias de fecha.
- */
 const FECHA_INVALIDA = 'Fecha inválida';
 
 /**
- * Regex para validar subconjunto de ISO 8601: YYYY-MM-DDTHH:mm[:ss[.ms]] (Z o ±HH:mm).
+ * Regex con grupos de captura para validar y extraer componentes de ISO 8601:
+ * YYYY-MM-DDTHH:mm[:ss[.ms]] (Z o ±HH:mm)
  */
-const REGEX_FECHA_ISO_8601 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+\-]\d{2}:\d{2})$/;
+const REGEX_FECHA_ISO_8601 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(?:Z|[+\-](\d{2}):(\d{2}))$/;
 
 /**
  * Formatea una fecha a formato DD/MM/YYYY (opcionalmente con HH:MM:SS).
  * * NOTA TÉCNICA: Esta función procesa la fecha en la zona horaria local del sistema.
- * Se validan los rangos de año/mes/día para evitar la normalización automática 
- * de JavaScript (ej. convertir 31 de abril en 1 de mayo).
+ * Se validan los componentes para evitar la normalización automática de JavaScript.
  */
 export function formatearFecha(fecha: string | Date | null | undefined, incluirHora: boolean = false): string {
   if (fecha === null || fecha === undefined) {
@@ -42,12 +39,10 @@ export function formatearFecha(fecha: string | Date | null | undefined, incluirH
         return FECHA_INVALIDA;
       }
     } 
-    // Caso 2: ISO 8601 (Validación estricta de componentes)
+    // Caso 2: ISO 8601 (Validación estricta de componentes mediante grupos)
     else if (REGEX_FECHA_ISO_8601.test(fechaLimpia)) {
       d = new Date(fechaLimpia);
-      
-      // Verificamos que no sea una fecha normalizada (ej: T25:70:00)
-      if (isNaN(d.getTime())) return FECHA_INVALIDA;
+      // Si el motor no puede parsearlo, d.getTime() será NaN y caerá en la validación final
     } 
     else {
       return FECHA_INVALIDA;
@@ -56,6 +51,7 @@ export function formatearFecha(fecha: string | Date | null | undefined, incluirH
     return FECHA_INVALIDA;
   }
 
+  // Validación final única para evitar redundancia
   if (isNaN(d.getTime())) {
     return FECHA_INVALIDA;
   }
