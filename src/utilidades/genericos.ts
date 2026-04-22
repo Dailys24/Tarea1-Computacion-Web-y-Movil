@@ -40,7 +40,16 @@ export function ordenarArray<T>(
         : comparableB.localeCompare(comparableA);
     }
 
-    // Comparación estándar
+    // Fallback determinístico para tipos mixtos (ej. string vs number)
+    if (typeof comparableA !== typeof comparableB) {
+      const strA = String(comparableA);
+      const strB = String(comparableB);
+      return orden === 'asc' 
+        ? strA.localeCompare(strB) 
+        : strB.localeCompare(strA);
+    }
+
+    // Comparación estándar numérica
     if (comparableA < comparableB) return orden === 'asc' ? -1 : 1;
     if (comparableA > comparableB) return orden === 'asc' ? 1 : -1;
     return 0;
@@ -55,7 +64,6 @@ export function paginarArray<T>(
   const paginaNormalizada = Number.isFinite(pagina) ? Math.max(1, Math.floor(pagina)) : 1;
   const tamanoNormalizado = Number.isFinite(tamanoPagina) ? Math.max(1, Math.floor(tamanoPagina)) : 1;
 
-  // Manejo de listas vacías asegurando mínimo 1 página
   const totalPaginas = Math.max(1, Math.ceil(items.length / tamanoNormalizado));
   const paginaActual = Math.min(paginaNormalizada, totalPaginas);
 
