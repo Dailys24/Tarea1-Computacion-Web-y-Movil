@@ -1,7 +1,7 @@
 //src/services/auth/authService.js
 const sessionService = require('./sessionService');
 const crypto = require('crypto'); //Modulo nativo de Node.js para criptografia segura
-// Este módulo es CommonJS y consume las utilidades desde validaciones.js
+// Importa funciones de validación desde el módulo validaciones.js
 const { validarEmail, validarPassword, validarRut, validarNombre, validarTelefono } = require('../../utilidades/validaciones.js');
 
 //Funcion para crear el hash de la contraseña

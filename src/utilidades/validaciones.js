@@ -17,7 +17,7 @@ function validarRut(rut) {
     const rutLimpio = rut.replace(/[.\-]/g, '').trim().toUpperCase();
     if (!/^\d+[0-9K]$/.test(rutLimpio)) return false;
 
-    // 2. Cálculo matemático  dígito verificador en chile
+    // 2. Cálculo matemático dígito verificador en Chile
     const cuerpo = rutLimpio.slice(0, -1);
     const dv = rutLimpio.slice(-1);
     let suma = 0;
