@@ -33,6 +33,14 @@ export function ordenarArray<T>(
     const comparableA = normalizarValorOrdenable(valorA);
     const comparableB = normalizarValorOrdenable(valorB);
 
+    // Trampa anti-NaN: Tratar valores matemáticamente nulos como si fueran null
+    const isNaNA = typeof comparableA === 'number' && Number.isNaN(comparableA);
+    const isNaNB = typeof comparableB === 'number' && Number.isNaN(comparableB);
+
+    if (isNaNA && isNaNB) return 0;
+    if (isNaNA) return 1; // Mueve el NaN al final
+    if (isNaNB) return -1; // Mueve el NaN al final
+
     // Comparación segura para textos con locale fijo ('es') para determinismo
     if (typeof comparableA === 'string' && typeof comparableB === 'string') {
       return orden === 'asc' 
