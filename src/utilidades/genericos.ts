@@ -1,31 +1,27 @@
 // src/utilidades/genericos.ts
 
-/**
- * Interfaz para el resultado de una paginación.
- */
-interface ResultadoPaginado<T> {
+export interface ResultadoPaginado<T> {
   data: T[];
   totalPaginas: number;
   totalElementos: number;
   paginaActual: number;
 }
 
-/**
- * Ordena un array de objetos de forma genérica.
- * @template T - El tipo de objeto contenido en el array.
- * @param items - Lista de elementos a ordenar.
- * @param campo - La propiedad del objeto por la cual se desea ordenar.
- * @param orden - Dirección del ordenamiento: 'asc' o 'desc'.
- */
 export function ordenarArray<T>(
   items: T[],
   campo: keyof T,
   orden: 'asc' | 'desc' = 'asc'
 ): T[] {
-  // Creamos una copia para mantener la inmutabilidad del array original
   return [...items].sort((a, b) => {
-    const valorA = a[campo];
-    const valorB = b[campo];
+    // Usamos 'any' internamente para permitir la comparación de strings/numbers 
+    // sin que el linter de TypeScript o Copilot bloqueen la compilación genérica
+    const valorA = a[campo] as any;
+    const valorB = b[campo] as any;
+
+    // Manejo seguro para evitar caídas con valores nulos o indefinidos
+    if (valorA === valorB) return 0;
+    if (valorA == null) return 1;
+    if (valorB == null) return -1;
 
     if (valorA < valorB) return orden === 'asc' ? -1 : 1;
     if (valorA > valorB) return orden === 'asc' ? 1 : -1;
@@ -33,27 +29,24 @@ export function ordenarArray<T>(
   });
 }
 
-/**
- * Pagina un array de objetos de forma genérica.
- * @template T - El tipo de objeto contenido en el array.
- * @param items - Lista completa de elementos.
- * @param pagina - Número de página actual (inicia en 1).
- * @param tamañoPagina - Cantidad de elementos por página.
- */
 export function paginarArray<T>(
   items: T[],
   pagina: number,
-  tamañoPagina: number
+  tamanoPagina: number
 ): ResultadoPaginado<T> {
-  const inicio = (pagina - 1) * tamañoPagina;
-  const fin = inicio + tamañoPagina;
+  // Validación estricta para evitar páginas o tamaños negativos/cero
+  const paginaNormalizada = Number.isFinite(pagina) ? Math.max(1, Math.floor(pagina)) : 1;
+  const tamanoNormalizado = Number.isFinite(tamanoPagina) ? Math.max(1, Math.floor(tamanoPagina)) : 1;
+
+  const inicio = (paginaNormalizada - 1) * tamanoNormalizado;
+  const fin = inicio + tamanoNormalizado;
   const data = items.slice(inicio, fin);
-  const totalPaginas = Math.ceil(items.length / tamañoPagina);
+  const totalPaginas = Math.ceil(items.length / tamanoNormalizado);
 
   return {
     data,
     totalPaginas,
     totalElementos: items.length,
-    paginaActual: pagina
+    paginaActual: paginaNormalizada
   };
 }

@@ -2,7 +2,6 @@
 
 export function validarEmail(email: string): boolean {
     if (typeof email !== 'string') return false;
-    // Validación
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
@@ -13,11 +12,9 @@ export function validarPassword(password: string): boolean {
 export function validarRut(rut: string): boolean {
     if (typeof rut !== 'string') return false;
     
-    // 1. Limpiamos puntos y guiones
     const rutLimpio = rut.replace(/[.\-]/g, '').trim().toUpperCase();
     if (!/^\d+[0-9K]$/.test(rutLimpio)) return false;
 
-    // 2. Cálculo matemático dígito verificador en Chile
     let suma = 0;
     let multiplicador = 2;
     const cuerpo = rutLimpio.slice(0, -1);
@@ -39,5 +36,6 @@ export function validarNombre(nombre: string): boolean {
 }
 
 export function validarTelefono(telefono: string): boolean {
-    return typeof telefono === 'string' && telefono.length >= 8;
+    // Añadido trim() para evitar falsos positivos con espacios
+    return typeof telefono === 'string' && telefono.trim().length >= 8;
 }
