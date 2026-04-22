@@ -33,11 +33,11 @@ export function ordenarArray<T>(
     const comparableA = normalizarValorOrdenable(valorA);
     const comparableB = normalizarValorOrdenable(valorB);
 
-    // Comparación segura para textos
+    // Comparación segura para textos con locale fijo ('es') para determinismo
     if (typeof comparableA === 'string' && typeof comparableB === 'string') {
       return orden === 'asc' 
-        ? comparableA.localeCompare(comparableB) 
-        : comparableB.localeCompare(comparableA);
+        ? comparableA.localeCompare(comparableB, 'es') 
+        : comparableB.localeCompare(comparableA, 'es');
     }
 
     // Fallback determinístico para tipos mixtos (ej. string vs number)
@@ -45,11 +45,10 @@ export function ordenarArray<T>(
       const strA = String(comparableA);
       const strB = String(comparableB);
       return orden === 'asc' 
-        ? strA.localeCompare(strB) 
-        : strB.localeCompare(strA);
+        ? strA.localeCompare(strB, 'es') 
+        : strB.localeCompare(strA, 'es');
     }
 
-    // Comparación estándar numérica
     if (comparableA < comparableB) return orden === 'asc' ? -1 : 1;
     if (comparableA > comparableB) return orden === 'asc' ? 1 : -1;
     return 0;

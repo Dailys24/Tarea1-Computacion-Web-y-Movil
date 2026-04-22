@@ -52,7 +52,11 @@ export function formatearFecha(fecha: string | Date | null | undefined, incluirH
         ) {
           return FECHA_INVALIDA;
         }
-        d = new Date(fechaLimpia);
+        
+        // Construimos la fecha con los componentes locales exactos
+        // para evitar el desplazamiento de zona horaria (timezone shift)
+        d = new Date(anio, mes - 1, dia, hora, min, seg);
+        d.setFullYear(anio);
       } else {
         return FECHA_INVALIDA;
       }
