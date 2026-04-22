@@ -1,61 +1,43 @@
-// src/utilidades/validaciones.js
+// src/utilidades/validaciones.ts
 
-function validarEmail(email) {
+export function validarEmail(email: string): boolean {
     if (typeof email !== 'string') return false;
-    // Validación asistida por copilot
+    // Validación
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
-function validarPassword(password) {
+export function validarPassword(password: string): boolean {
     return typeof password === 'string' && password.length >= 8;
 }
 
-function validarRut(rut) {
+export function validarRut(rut: string): boolean {
     if (typeof rut !== 'string') return false;
     
     // 1. Limpiamos puntos y guiones
     const rutLimpio = rut.replace(/[.\-]/g, '').trim().toUpperCase();
     if (!/^\d+[0-9K]$/.test(rutLimpio)) return false;
 
-    // 2. Cálculo matemático  dígito verificador en chile
-    const cuerpo = rutLimpio.slice(0, -1);
-    const dv = rutLimpio.slice(-1);
+    // 2. Cálculo matemático dígito verificador en Chile
     let suma = 0;
     let multiplicador = 2;
+    const cuerpo = rutLimpio.slice(0, -1);
+    const dv = rutLimpio.slice(-1);
 
-    for (let i = cuerpo.length - 1; i >= 0; i -= 1) {
+    for (let i = cuerpo.length - 1; i >= 0; i--) {
         suma += parseInt(cuerpo[i], 10) * multiplicador;
-        multiplicador = multiplicador === 7 ? 2 : multiplicador + 1;
+        multiplicador = multiplicador < 7 ? multiplicador + 1 : 2;
     }
 
-    const resto = 11 - (suma % 11);
-    let dvEsperado = '';
+    const dvEsperado = 11 - (suma % 11);
+    const dvCalculado = dvEsperado === 11 ? '0' : dvEsperado === 10 ? 'K' : dvEsperado.toString();
 
-    if (resto === 11) dvEsperado = '0';
-    else if (resto === 10) dvEsperado = 'K';
-    else dvEsperado = String(resto);
-
-    return dv === dvEsperado;
+    return dv === dvCalculado;
 }
 
-function validarNombre(nombre) {
-    if (typeof nombre !== 'string') return false;
-    const nombreLimpio = nombre.trim();
-    // Exigir que tenga al menos 3 letras reales (no números ni espacios)
-    const letras = nombreLimpio.match(/[A-Za-zÁÉÍÓÚáéíóúÑñÜü]/g);
-    return letras !== null && letras.length >= 3;
+export function validarNombre(nombre: string): boolean {
+    return typeof nombre === 'string' && nombre.trim().length > 0;
 }
 
-function validarTelefono(telefono) {
-    // Exigir que sean solo números y al menos 9
-    return typeof telefono === 'string' && /^\d{9,}$/.test(telefono);
+export function validarTelefono(telefono: string): boolean {
+    return typeof telefono === 'string' && telefono.length >= 8;
 }
-
-
-module.exports = {
-    validarEmail,
-    validarPassword,
-    validarRut,
-    validarNombre,
-    validarTelefono
-};
