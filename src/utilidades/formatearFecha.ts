@@ -6,7 +6,7 @@ const FECHA_INVALIDA = 'Fecha inválida';
  * Regex con grupos de captura para validar y extraer componentes de ISO 8601:
  * YYYY-MM-DDTHH:mm[:ss[.ms]] (Z o ±HH:mm)
  */
-const REGEX_FECHA_ISO_8601 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(?:Z|[+\-](\d{2}):(\d{2}))$/;
+const REGEX_FECHA_ISO_8601 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(?:Z|[+\-](?:\d{2}):(?:\d{2}))$/;
 
 /**
  * Verifica si un año es bisiesto.
@@ -22,8 +22,9 @@ const obtenerDiasDelMes = (mes: number, anio: number) => {
 
 /**
  * Formatea una fecha a formato DD/MM/YYYY (opcionalmente con HH:mm:ss).
- * * NOTA TÉCNICA: Esta función procesa la fecha para su visualización en la zona 
- * horaria local del sistema. Valida rangos de calendario (incluyendo bisiestos) 
+ *
+ * NOTA TÉCNICA: Esta función procesa la fecha para su visualización en la zona
+ * horaria local del sistema. Valida rangos de calendario (incluyendo bisiestos)
  * antes de la conversión para asegurar la integridad de los datos.
  */
 export function formatearFecha(fecha: string | Date | null | undefined, incluirHora: boolean = false): string {
@@ -45,10 +46,9 @@ export function formatearFecha(fecha: string | Date | null | undefined, incluirH
       if (mes < 1 || mes > 12 || dia < 1 || dia > obtenerDiasDelMes(mes, anio)) {
         return FECHA_INVALIDA;
       }
-      // Evitamos el comportamiento de 0-99 -> 1900-1999 usando setFullYear
       d = new Date(anio, mes - 1, dia);
       d.setFullYear(anio);
-    } 
+    }
     // Caso 2: ISO 8601 (Validación lógica de componentes)
     else {
       const match = fechaLimpia.match(REGEX_FECHA_ISO_8601);
@@ -61,7 +61,7 @@ export function formatearFecha(fecha: string | Date | null | undefined, incluirH
         const seg = match[6] ? parseInt(match[6], 10) : 0;
 
         if (
-          mes < 1 || mes > 12 || 
+          mes < 1 || mes > 12 ||
           dia < 1 || dia > obtenerDiasDelMes(mes, anio) ||
           hora > 23 || min > 59 || seg > 59
         ) {
@@ -80,9 +80,9 @@ export function formatearFecha(fecha: string | Date | null | undefined, incluirH
   if (Number.isNaN(d.getTime())) {
     return FECHA_INVALIDA;
   }
-  
+
   const diaStr = d.getDate().toString().padStart(2, '0');
-  const mesStr = (d.getMonth() + 1).toString().padStart(2, '0'); 
+  const mesStr = (d.getMonth() + 1).toString().padStart(2, '0');
   const anioStr = d.getFullYear().toString().padStart(4, '0');
 
   let resultado = `${diaStr}/${mesStr}/${anioStr}`;
