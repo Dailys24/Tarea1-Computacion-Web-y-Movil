@@ -15,6 +15,18 @@ const obtenerDiasDelMes = (mes: number, anio: number) => {
   return [31, esBisiesto(anio) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mes - 1];
 };
 
+/**
+ * Formatea una fecha a formato DD/MM/YYYY (opcionalmente con HH:mm:ss).
+ * * NOTA TÉCNICA SOBRE ZONAS HORARIAS:
+ * - Si la entrada es un `string` (ej. ISO 8601), la función preserva y formatea 
+ * los componentes visuales exactos ingresados, ignorando conversiones de zona horaria.
+ * - Si la entrada es un objeto `Date`, la función utiliza los métodos locales 
+ * (getDate, getHours, etc.), formateando la fecha relativa a la zona horaria local del sistema.
+ *
+ * @param fecha - La fecha a formatear (string, Date, null o undefined).
+ * @param incluirHora - Si es true, incluye la hora en el formato (default: false).
+ * @returns El string de la fecha formateada o 'Fecha inválida'.
+ */
 export function formatearFecha(fecha: string | Date | null | undefined, incluirHora: boolean = false): string {
   if (fecha === null || fecha === undefined) return FECHA_INVALIDA;
 
