@@ -33,7 +33,7 @@ export function ordenarArray<T>(
     const comparableA = normalizarValorOrdenable(valorA);
     const comparableB = normalizarValorOrdenable(valorB);
 
-    // Trampa anti-NaN: Tratar valores matemáticamente nulos como si fueran null
+    // Trampa anti-NaN: tratar NaN como null para enviarlo al final
     const isNaNA = typeof comparableA === 'number' && Number.isNaN(comparableA);
     const isNaNB = typeof comparableB === 'number' && Number.isNaN(comparableB);
 
