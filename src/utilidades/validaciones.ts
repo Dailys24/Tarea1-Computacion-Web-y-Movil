@@ -32,11 +32,11 @@ export function validarRut(rut: unknown): boolean {
 }
 
 export function validarNombre(nombre: unknown): boolean {
-    // Alineado con el umbral de src/services/auth/authService.js
+    // Requiere al menos 3 caracteres efectivos, ignorando espacios al inicio y al final
     return typeof nombre === 'string' && nombre.trim().length >= 3;
 }
 
 export function validarTelefono(telefono: unknown): boolean {
-    // Alineado con el umbral de src/services/auth/authService.js
+    // Requiere al menos 9 caracteres efectivos, ignorando espacios al inicio y al final
     return typeof telefono === 'string' && telefono.trim().length >= 9;
 }
