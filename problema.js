@@ -508,62 +508,22 @@ if (action == "buscarProductos") {
 // mas funciones con malas practicas
 // =====================================
 
-// funcion para validar TODO
-function v(cosa, tipo) {
-  var r = false;
-  if (tipo == 1) {
-    // validar email
-    if (cosa != null && cosa != undefined && cosa != "" && cosa.indexOf("@") != -1 && cosa.indexOf(".") != -1) {
-      r = true;
-    }
-  }
-  if (tipo == 2) {
-    // validar pass
-    if (cosa != null && cosa != undefined && cosa.length >= 4) {
-      r = true;
-    }
-  }
-  if (tipo == 3) {
-    // validar numero
-    if (cosa != null && cosa != undefined && !isNaN(cosa) && cosa > 0) {
-      r = true;
-    }
-  }
-  if (tipo == 4) {
-    // validar string
-    if (cosa != null && cosa != undefined && cosa != "" && typeof cosa == "string") {
-      r = true;
-    }
-  }
-  if (tipo == 5) {
-    // validar array
-    if (cosa != null && cosa != undefined && Array.isArray(cosa) && cosa.length > 0) {
-      r = true;
-    }
-  }
-  if (tipo == 6) {
-    // validar objeto
-    if (cosa != null && cosa != undefined && typeof cosa == "object" && Object.keys(cosa).length > 0) {
-      r = true;
-    }
-  }
-  if (tipo == 7) {
-    // validar fecha
-    if (cosa != null && cosa != undefined) {
-      var dd2 = new Date(cosa);
-      if (!isNaN(dd2.getTime())) {
-        r = true;
-      }
-    }
-  }
-  if (tipo == 8) {
-    // validar rut chileno (super basico)
-    if (cosa != null && cosa != undefined && cosa != "" && cosa.length >= 8 && cosa.indexOf("-") != -1) {
-      r = true;
-    }
-  }
-  return r;
-}
+//  Validaciones con nombres descriptivos
+
+const validarEmail = (correo) => {
+  //el correo debe llevar @ y . para ser valido
+  return correo != null && correo.includes("@") && correo.includes(".");
+};
+
+const validarRut = (rut) => {
+  // el rut debe tener guion despues del octavo caracter y largo de 9 caracteres
+  return rut != null && rut.length == 9 && rut.includes("-");
+};
+
+const validarPassword = (password) => {
+  //el password debe tener minimo 8 caracteres y maximo 30 caracteres
+  return password != null && password.length >= 8 && password.length <= 30;
+};
 
 // calcular precio con todo
 function calc(p, d, d2, d3, iva, envio, cuotas) {
