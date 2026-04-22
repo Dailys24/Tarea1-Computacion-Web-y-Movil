@@ -53,10 +53,9 @@ export function formatearFecha(fecha: string | Date | null | undefined, incluirH
           return FECHA_INVALIDA;
         }
         
-        // Construimos la fecha con los componentes locales exactos
-        // para evitar el desplazamiento de zona horaria (timezone shift)
-        d = new Date(anio, mes - 1, dia, hora, min, seg);
-        d.setFullYear(anio);
+        // Para ISO 8601 con zona horaria explícita (Z u offset),
+        // se debe respetar el offset original al parsear.
+        d = new Date(fechaLimpia);
       } else {
         return FECHA_INVALIDA;
       }
