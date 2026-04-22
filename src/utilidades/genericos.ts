@@ -68,9 +68,9 @@ export function paginarArray<T>(
   if (items.length === 0) {
     return {
       data: [],
-      totalPaginas: 0,
+      totalPaginas: 1, // Solución a la invariante
       totalElementos: 0,
-      paginaActual: 1 // Consistencia para APIs y UIs
+      paginaActual: 1
     };
   }
 

@@ -30,7 +30,6 @@ const obtenerDiasDelMes = (mes: number, anio: number) => {
 export function formatearFecha(fecha: string | Date | null | undefined, incluirHora: boolean = false): string {
   if (fecha === null || fecha === undefined) return FECHA_INVALIDA;
 
-  // Manejo directo de Strings: Extraemos y formateamos sin pasar por el motor de Timezone de JS
   if (typeof fecha === 'string') {
     const fechaLimpia = fecha.trim();
     if (fechaLimpia === '') return FECHA_INVALIDA;
@@ -41,7 +40,11 @@ export function formatearFecha(fecha: string | Date | null | undefined, incluirH
       if (mes < 1 || mes > 12 || dia < 1 || dia > obtenerDiasDelMes(mes, anio)) {
         return FECHA_INVALIDA;
       }
-      return `${dia.toString().padStart(2, '0')}/${mes.toString().padStart(2, '0')}/${anio.toString().padStart(4, '0')}`;
+      let resultado = `${dia.toString().padStart(2, '0')}/${mes.toString().padStart(2, '0')}/${anio.toString().padStart(4, '0')}`;
+      if (incluirHora) {
+        resultado += ' 00:00:00';
+      }
+      return resultado;
     } 
     
     // Caso 2: ISO 8601
@@ -61,7 +64,6 @@ export function formatearFecha(fecha: string | Date | null | undefined, incluirH
         return FECHA_INVALIDA;
       }
       
-      // Armamos la respuesta directamente con los componentes capturados (respeta el offset visual)
       let resultado = `${match[3]}/${match[2]}/${match[1]}`;
       if (incluirHora) {
         resultado += ` ${match[4]}:${match[5]}:${match[6] || '00'}`;
@@ -72,7 +74,6 @@ export function formatearFecha(fecha: string | Date | null | undefined, incluirH
     return FECHA_INVALIDA;
   }
 
-  // Manejo de objetos Date nativos
   if (fecha instanceof Date) {
     if (Number.isNaN(fecha.getTime())) return FECHA_INVALIDA;
 

@@ -32,11 +32,17 @@ export function validarRut(rut: unknown): boolean {
 }
 
 export function validarNombre(nombre: unknown): boolean {
-    // Requiere al menos 3 caracteres efectivos, ignorando espacios al inicio y al final
-    return typeof nombre === 'string' && nombre.trim().length >= 3;
+    if (typeof nombre !== 'string') return false;
+
+    const nombreLimpio = nombre.trim();
+    // Requiere al menos 3 caracteres efectivos y sólo letras reales con espacios internos
+    return nombreLimpio.length >= 3 && /^[\p{L}]+(?:\s+[\p{L}]+)*$/u.test(nombreLimpio);
 }
 
 export function validarTelefono(telefono: unknown): boolean {
-    // Requiere al menos 9 caracteres efectivos, ignorando espacios al inicio y al final
-    return typeof telefono === 'string' && telefono.trim().length >= 9;
+    if (typeof telefono !== 'string') return false;
+
+    const telefonoLimpio = telefono.trim();
+    // Requiere al menos 9 caracteres efectivos y sólo dígitos
+    return telefonoLimpio.length >= 9 && /^\d+$/.test(telefonoLimpio);
 }
