@@ -39,20 +39,34 @@ export function formatearFecha(fecha: string | Date | null | undefined, incluirH
         return FECHA_INVALIDA;
       }
     } 
-    // Caso 2: ISO 8601 (Validación estricta de componentes mediante grupos)
-    else if (REGEX_FECHA_ISO_8601.test(fechaLimpia)) {
-      d = new Date(fechaLimpia);
-      // Si el motor no puede parsearlo, d.getTime() será NaN y caerá en la validación final
-    } 
+    // Caso 2: ISO 8601 con validación de componentes
     else {
-      return FECHA_INVALIDA;
+      const match = fechaLimpia.match(REGEX_FECHA_ISO_8601);
+      if (match) {
+        d = new Date(fechaLimpia);
+        
+        // Validamos que el objeto Date sea válido antes de comparar componentes
+        if (Number.isNaN(d.getTime())) return FECHA_INVALIDA;
+
+        // Comprobamos rangos básicos para evitar normalización (ej. Mes 13, Hora 25)
+        const mes = parseInt(match[2], 10);
+        const dia = parseInt(match[3], 10);
+        const hora = parseInt(match[4], 10);
+        const min = parseInt(match[5], 10);
+
+        if (mes < 1 || mes > 12 || dia < 1 || dia > 31 || hora > 23 || min > 59) {
+          return FECHA_INVALIDA;
+        }
+      } else {
+        return FECHA_INVALIDA;
+      }
     }
   } else {
     return FECHA_INVALIDA;
   }
 
-  // Validación final única para evitar redundancia
-  if (isNaN(d.getTime())) {
+  // Validación final usando Number.isNaN (Sugerencia de Copilot)
+  if (Number.isNaN(d.getTime())) {
     return FECHA_INVALIDA;
   }
   
