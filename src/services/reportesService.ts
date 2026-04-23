@@ -6,6 +6,49 @@
  */
 const redondear = (num: number): number => Math.round((num + Number.EPSILON) * 100) / 100;
 
+export interface Venta {
+  id: number;
+  total: number;
+  estado: string;
+}
+
+export interface Producto {
+  nom: string;
+  prec: number;
+  stock: number;
+  rating: number;
+  activo?: boolean;
+  cat?: "electronica" | "accesorios" | "audio" | "almacenamiento" | "componentes" | "muebles";
+}
+
+export interface Usuario {
+  nombre: string;
+  email: string;
+  tipo: "admin" | "cliente" | "vendedor";
+  puntos: number;
+  activo?: boolean;
+  bloqueado?: boolean;
+}
+
+export interface StatsResult {
+  usuarios: {
+    total: number;
+    activos: number;
+    bloqueados: number;
+    admin: number;
+    clientes: number;
+    vendedores: number;
+  };
+  productos: {
+    total: number;
+    activos: number;
+    inactivos: number;
+    porCategoria: Record<string, number>;
+    stockTotal: number;
+    valorInventario: number;
+  };
+}
+
 /**
  * Genera un reporte formateado asegurando la precisión de los cálculos.
  */
@@ -18,77 +61,126 @@ export function makeReport(type: 'ventas' | 'productos' | 'usuarios', from: stri
   const count = data.length;
 
   if (type === "ventas") {
-    const totales = data.map(v => v.total);
-    const totalGeneral = redondear(totales.reduce((acc, val) => acc + val, 0));
-    const max = Math.max(...totales);
-    const min = Math.min(...totales);
-    const avg = redondear(totalGeneral / count);
+    const d = data as Venta[];
+    let totalBruto = 0;
+    let max = -Infinity;
+    let min = Infinity;
 
-    const lines = data.map(v => `Orden: ${v.id} | Total: $${redondear(v.total)} | Estado: ${v.estado}`);
-    
+    const lines = d.map(v => {
+      totalBruto += v.total;
+      if (v.total > max) max = v.total;
+      if (v.total < min) min = v.total;
+      return `Orden: ${v.id} | Total: $${redondear(v.total)} | Estado: ${v.estado}`;
+    });
+
+    const avg = redondear(totalBruto / count);
+    const totalGeneral = redondear(totalBruto);
+
     report += lines.join("\n") + "\n------------------------\n";
-    report += `Total ordenes: ${count}\nTotal ingresos: $${totalGeneral}\nPromedio por orden: $${avg}\nVenta maxima: $${max}\nVenta minima: $${min}\n`;
+    report += `Total órdenes: ${count}\nTotal ingresos: $${totalGeneral}\nPromedio por orden: $${avg}\nVenta máxima: $${redondear(max)}\nVenta mínima: $${redondear(min)}\n`;
   } 
   else if (type === "productos") {
-    const precios = data.map(p => p.prec);
-    const totalPrecios = redondear(precios.reduce((acc, val) => acc + val, 0));
-    const max = Math.max(...precios);
-    const min = Math.min(...precios);
-    const avg = redondear(totalPrecios / count);
+    const d = data as Producto[];
+    let totalBruto = 0;
+    let max = -Infinity;
+    let min = Infinity;
 
-    const lines = data.map(p => `Producto: ${p.nom} | Precio: $${redondear(p.prec)} | Stock: ${p.stock} | Rating: ${p.rating}`);
+    const lines = d.map(p => {
+      totalBruto += p.prec;
+      if (p.prec > max) max = p.prec;
+      if (p.prec < min) min = p.prec;
+      return `Producto: ${p.nom} | Precio: $${redondear(p.prec)} | Stock: ${p.stock} | Rating: ${p.rating}`;
+    });
+
+    const avg = redondear(totalBruto / count);
+    const totalGeneral = redondear(totalBruto);
 
     report += lines.join("\n") + "\n----------------------------\n";
-    report += `Total productos: ${count}\nPrecio promedio: $${avg}\nPrecio maximo: $${max}\nPrecio minimo: $${min}\n`;
+    report += `Total productos: ${count}\nPrecio promedio: $${avg}\nPrecio máximo: $${redondear(max)}\nPrecio mínimo: $${redondear(min)}\n`;
   } 
   else if (type === "usuarios") {
-    const puntos = data.map(u => u.puntos);
-    const totalPuntos = redondear(puntos.reduce((acc, val) => acc + val, 0));
-    const max = Math.max(...puntos);
-    const min = Math.min(...puntos);
-    const avg = redondear(totalPuntos / count);
+    const d = data as Usuario[];
+    let totalBruto = 0;
+    let max = -Infinity;
+    let min = Infinity;
 
-    const lines = data.map(u => `Usuario: ${u.nombre} | Email: ${u.email} | Tipo: ${u.tipo} | Puntos: ${u.puntos} | Activo: ${u.activo}`);
+    const lines = d.map(u => {
+      totalBruto += u.puntos;
+      if (u.puntos > max) max = u.puntos;
+      if (u.puntos < min) min = u.puntos;
+      return `Usuario: ${u.nombre} | Email: ${u.email} | Tipo: ${u.tipo} | Puntos: ${redondear(u.puntos)} | Activo: ${u.activo}`;
+    });
+
+    const avg = redondear(totalBruto / count);
+    const totalGeneral = redondear(totalBruto);
 
     report += lines.join("\n") + "\n---------------------------\n";
-    report += `Total usuarios: ${count}\nPuntos promedio: ${avg}\nMax puntos: ${max}\nMin puntos: ${min}\n`;
+    report += `Total usuarios: ${count}\nPuntos promedio: ${avg}\nMax puntos: ${redondear(max)}\nMin puntos: ${redondear(min)}\n`;
   }
 
   return report;
 }
 
 /**
- * Obtiene las estadísticas generales del sistema con cálculos precisos.
+ * Obtiene las estadísticas generales del sistema con un único recorrido para maximizar rendimiento.
  */
-export function getStats(dbUsers: any[], dbProducts: any[]) {
-  const stats = {
+export function getStats(dbUsers: Usuario[], dbProducts: Producto[]): StatsResult {
+  const usuariosStats = dbUsers.reduce(
+    (acc, u) => {
+      if (u.activo) acc.activos += 1;
+      if (u.bloqueado) acc.bloqueados += 1;
+
+      if (u.tipo === "admin") acc.admin += 1;
+      else if (u.tipo === "cliente") acc.clientes += 1;
+      else if (u.tipo === "vendedor") acc.vendedores += 1;
+
+      return acc;
+    },
+    { activos: 0, bloqueados: 0, admin: 0, clientes: 0, vendedores: 0 }
+  );
+
+  const productosStats = dbProducts.reduce(
+    (acc, p) => {
+      if (p.activo) acc.activos += 1;
+      else acc.inactivos += 1;
+
+      if (p.cat) {
+        acc.porCategoria[p.cat] = (acc.porCategoria[p.cat] || 0) + 1;
+      }
+
+      acc.stockTotal += p.stock;
+      acc.valorInventario += p.prec * p.stock;
+
+      return acc;
+    },
+    {
+      activos: 0,
+      inactivos: 0,
+      porCategoria: {
+        electronica: 0,
+        accesorios: 0,
+        audio: 0,
+        almacenamiento: 0,
+        componentes: 0,
+        muebles: 0
+      } as Record<string, number>,
+      stockTotal: 0,
+      valorInventario: 0
+    }
+  );
+
+  return {
     usuarios: {
       total: dbUsers.length,
-      activos: dbUsers.filter(u => u.activo).length,
-      bloqueados: dbUsers.filter(u => u.bloqueado).length,
-      admin: dbUsers.filter(u => u.tipo === "admin").length,
-      clientes: dbUsers.filter(u => u.tipo === "cliente").length,
-      vendedores: dbUsers.filter(u => u.tipo === "vendedor").length
+      ...usuariosStats
     },
     productos: {
       total: dbProducts.length,
-      activos: dbProducts.filter(p => p.activo).length,
-      inactivos: dbProducts.filter(p => !p.activo).length,
-      porCategoria: {
-        electronica: dbProducts.filter(p => p.cat === "electronica").length,
-        accesorios: dbProducts.filter(p => p.cat === "accesorios").length,
-        audio: dbProducts.filter(p => p.cat === "audio").length,
-        almacenamiento: dbProducts.filter(p => p.cat === "almacenamiento").length,
-        componentes: dbProducts.filter(p => p.cat === "componentes").length,
-        muebles: dbProducts.filter(p => p.cat === "muebles").length
-      },
-      stockTotal: dbProducts.reduce((acc, p) => acc + p.stock, 0),
-      // Cálculo preciso de inventario (Precio * Stock) sumado de forma segura
-      valorInventario: redondear(
-        dbProducts.reduce((acc, p) => acc + (p.prec * p.stock), 0)
-      )
+      activos: productosStats.activos,
+      inactivos: productosStats.inactivos,
+      porCategoria: productosStats.porCategoria,
+      stockTotal: productosStats.stockTotal,
+      valorInventario: redondear(productosStats.valorInventario)
     }
   };
-
-  return stats;
 }
