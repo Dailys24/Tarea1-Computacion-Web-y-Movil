@@ -1422,7 +1422,165 @@ function utils(op, val, val2, val3) {
     var f = []; for (var i = 0; i < val.length; i++) { if (Array.isArray(val[i])) { for (var j = 0; j < val[i].length; j++) f.push(val[i][j]); } else f.push(val[i]); } return f;
   }
 }
+// TAREA 3: actualización de stock post-pago
+// Branch: feature/t1-diego
+//
+// Corrige el bug original donde el stock se descontaba ANTES
+// de confirmar que el pago fue exitoso.
+// Esta función solo debe llamarse desde checkout(), después de
+// que _validarPago() haya retornado { ok: true } (función siguiente o T1).
+// ─────────────────────────────────────────────────────────────────
 
+function _actualizarStockPostPago(itemsOrden) {
+  // itemsOrden es el array ya normalizado que arma checkout()
+  // cada item tiene: { productoId, cantidad, etc }
+
+  for (var i = 0; i < itemsOrden.length; i++) {
+    var item = itemsOrden[i];
+
+    // verificamos el estado actual del inventario antes de tocar nada
+    // checkInventory() ya existe en el archivo principal
+    var estadoActual = checkInventory(item.productoId);
+
+    if (!estadoActual.ok) {
+      // el producto no existe en inventario: logueamos y seguimos con el siguiente
+      // no cortamos todo el proceso por un item, los demas deben procesarse igual
+      log("Stock update fallido - producto no encontrado: " + item.productoId, "ERROR", item);
+      continue;
+    }
+
+    if (estadoActual.stock < item.cantidad) {
+      // stock insuficiente al momento de descontar (puede pasar en pedidos simultaneos)
+      log("Stock insuficiente al descontar producto " + item.productoId, "WARN", {
+        stockDisponible: estadoActual.stock,
+        cantidadPedida:  item.cantidad
+      });
+      continue;
+    }
+
+    // descontar del array de productos
+    // dbProducts es el array exportado que usa el resto del sistema
+    for (var j = 0; j < dbProducts.length; j++) {
+      if (dbProducts[j].id === item.productoId) {
+        dbProducts[j].stock -= item.cantidad;
+
+        // si el stock quedo bajo, generamos alerta usando checkInventory de nuevo
+        var estadoNuevo = checkInventory(item.productoId);
+        if (estadoNuevo.ok && estadoNuevo.alerta) {
+          log("Alerta: stock bajo para producto " + item.productoId, "WARN", {
+            stockRestante: dbProducts[j].stock,
+            status:        estadoNuevo.status
+          });
+        }
+        break;
+      }
+    }
+  }
+}
+// TAREA 1: checkout refactorizado
+// Branch: feature/t1-diego
+//
+// IMPORTANTE ANTES DE UNIFICAR CÓDIGO:
+// Confirmar con el equipo cómo vienen los ítems del carrito procesado.
+// Por defecto este código espera: { productoId, precioUnitario, cantidad, nombre }
+// Si los nombres son distintos,verificar y ajustar el adaptador _normalizarItem() abajo.
+// ─────────────────────────────────────────────────────────────────
+
+// adaptador flexible: normaliza el item sin importar como lo haya armado el equipo
+// cuando confirmen la estructura, simplificar o eliminar este adaptador
+function _normalizarItem(item) {
+  return {
+    productoId:     item.productoId   || item.id_prod  || item.productId  || item.id,
+    nombre:         item.nombre       || item.name      || item.nom        || "sin nombre",
+    precioUnitario: item.precioUnitario|| item.precio   || item.price      || item.prec || 0,
+    cantidad:       item.cantidad     || item.qty       || item.quantity   || 1
+  };
+}
+
+function checkout(carritoProcessado, usuario, metodoPago, direccion, datosPago) {
+  // validaciones de entrada
+  if (!carritoProcessado || carritoProcessado.length === 0) {
+    return { ok: false, msg: "El carrito esta vacio", orden: null };
+  }
+  if (!usuario || !usuario.id) {
+    return { ok: false, msg: "Usuario no valido", orden: null };
+  }
+
+  // paso 1: validar el pago ANTES de tocar el stock o crear la orden
+  // _validarPago viene de la Tarea 4 (ya en el archivo principal)
+  var pagoValido = _validarPago(metodoPago, datosPago);
+  if (!pagoValido.ok) {
+    return { ok: false, msg: pagoValido.msg, orden: null };
+  }
+
+  // paso 2: calcular subtotal normalizando cada item
+  var subtotal = 0;
+  var itemsOrden = [];
+
+  for (var i = 0; i < carritoProcessado.length; i++) {
+    var item = _normalizarItem(carritoProcessado[i]);
+    var totalItem = item.precioUnitario * item.cantidad;
+    subtotal += totalItem;
+    itemsOrden.push({
+      productoId:     item.productoId,
+      nombre:         item.nombre,
+      cantidad:       item.cantidad,
+      precioUnitario: item.precioUnitario,
+      totalItem:      totalItem
+    });
+  }
+
+  // paso 3: descuento segun nivel de puntos del usuario
+  var pctDescuento = 0;
+  if      (usuario.puntos >= 300) pctDescuento = 15;
+  else if (usuario.puntos >= 200) pctDescuento = 10;
+  else if (usuario.puntos >= 100) pctDescuento = 5;
+
+  // sumar descuento adicional del perfil del usuario si tiene
+  pctDescuento += (usuario.descuento || 0);
+
+  var montoDescuento       = subtotal * (pctDescuento / 100);
+  var subtotalConDescuento = subtotal - montoDescuento;
+
+  // paso 4: iva y total final
+  var iva        = subtotalConDescuento * 0.19;
+  var totalFinal = subtotalConDescuento + iva;
+
+  // paso 5: descontar stock (solo llega aca si el pago fue valido)
+  // _actualizarStockPostPago viene de la Tarea 3 (función de arriba)
+  _actualizarStockPostPago(itemsOrden);
+
+  // paso 6: puntos que gana el usuario con esta compra
+  var puntosGanados = Math.floor(totalFinal / 1000);
+
+  // paso 7: armar objeto Orden estructurado
+  var orden = {
+    id: "ORD-" + Date.now(),
+    usuarioId: usuario.id,
+    items: itemsOrden,
+    resumenPrecio: {
+      subtotal:             subtotal,
+      descuentoPct:         pctDescuento,
+      descuentoMonto:       montoDescuento,
+      subtotalConDescuento: subtotalConDescuento,
+      iva:                  iva,
+      total:                totalFinal
+    },
+    pago: {
+      metodo: metodoPago,
+      estado: "aprobado"
+    },
+    envio: {
+      direccion: direccion,
+      estado:    "pendiente"
+    },
+    puntosGanados: puntosGanados,
+    estadoOrden:   "pagado",
+    creadaEn:      new Date().toISOString()
+  };
+
+  return { ok: true, msg: "Orden creada con exito", orden: orden };
+}
 // exportar todo junto sin modularizacion
 module.exports = {
   doEverything: doEverything,
@@ -1453,5 +1611,7 @@ module.exports = {
   formatDate: formatDate,
   formatDate2: formatDate2,
   formatDate3: formatDate3,
-  utils: utils
+  utils: utils,
+  checkout: checkout,
+  _actualizarStockPostPago: _actualizarStockPostPago
 };
