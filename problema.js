@@ -1149,43 +1149,97 @@ function reviews(action3, prodId3, userId5, rating2, comment, data4) {
   return { ok: false, msg: "accion invalida" };
 }
 
-// funcion de envio con logica embebida
+// funcion de envio con objeto de configuracion por ciudad
 function calcShipping(destCity, weight, dimensions, prodType, isUrgent, isFree, hasInsurance) {
-  // tasas hardcodeadas
-  var baseCost = 0;
-  var cityMult = 1;
-  var weightCost = 0;
-  var insuranceCost = 0;
-  var urgentCost = 0;
-  
-  if (destCity == "Santiago") cityMult = 1;
-  if (destCity == "Valparaiso") cityMult = 1.2;
-  if (destCity == "Concepcion") cityMult = 1.4;
-  if (destCity == "La Serena") cityMult = 1.6;
-  if (destCity == "Antofagasta") cityMult = 1.8;
-  if (destCity == "Iquique") cityMult = 2.0;
-  if (destCity == "Punta Arenas") cityMult = 2.5;
-  
-  // costo por peso
-  if (weight <= 1) weightCost = 2000;
-  if (weight > 1 && weight <= 5) weightCost = 3500;
-  if (weight > 5 && weight <= 10) weightCost = 5000;
-  if (weight > 10 && weight <= 20) weightCost = 8000;
-  if (weight > 20) weightCost = 12000;
-  
-  // tipo de producto
-  if (prodType == "fragil") weightCost = weightCost * 1.5;
-  if (prodType == "electronico") weightCost = weightCost * 1.3;
-  if (prodType == "normal") weightCost = weightCost * 1;
-  
-  baseCost = weightCost * cityMult;
-  
-  if (isUrgent == true) urgentCost = baseCost * 0.5;
-  if (hasInsurance == true) insuranceCost = baseCost * 0.1;
+
+  // objeto de configuracion: si se agrega una ciudad nueva, solo se toca aqui
+  var MULTIPLICADORES_CIUDAD = {
+    "Santiago":     1.0,
+    "Valparaiso":   1.2,
+    "Concepcion":   1.4,
+    "La Serena":    1.6,
+    "Antofagasta":  1.8,
+    "Iquique":      2.0,
+    "Punta Arenas": 2.5
+  };
+
+  var MULTIPLICADORES_TIPO = {
+    "fragil":      1.5,
+    "electronico": 1.3,
+    "normal":      1.0
+  };
+
+  // envio gratis tiene prioridad sobre todo lo demas
   if (isFree == true) return { costo: 0, desglose: "Envio gratis" };
-  
+
+  // ciudad desconocida usa multiplicador 1 como fallback
+  var cityMult = MULTIPLICADORES_CIUDAD[destCity] || 1.0;
+
+  // costo base segun peso
+  var weightCost = 0;
+  if (weight <= 1)        weightCost = 2000;
+  else if (weight <= 5)   weightCost = 3500;
+  else if (weight <= 10)  weightCost = 5000;
+  else if (weight <= 20)  weightCost = 8000;
+  else                    weightCost = 12000;
+
+  // ajuste segun tipo de producto
+  var typeMult = MULTIPLICADORES_TIPO[prodType] || 1.0;
+  weightCost = weightCost * typeMult;
+
+  var baseCost      = weightCost * cityMult;
+  var urgentCost    = isUrgent     ? baseCost * 0.50 : 0;
+  var insuranceCost = hasInsurance ? baseCost * 0.10 : 0;
+
   var total = baseCost + urgentCost + insuranceCost;
   return { costo: total, base: baseCost, urgente: urgentCost, seguro: insuranceCost };
+}
+
+// helper: verifica que la fecha de expiracion de la tarjeta no haya pasado
+// expiry viene como "MM/AA", ej: "03/27"
+function _tarjetaVigente(expiry) {
+  if (!expiry || expiry.indexOf("/") == -1) return false;
+  var partes = expiry.split("/");
+  var mes  = parseInt(partes[0], 10);
+  var anio = parseInt("20" + partes[1], 10); // "27" → 2027
+  if (isNaN(mes) || isNaN(anio) || mes < 1 || mes > 12) return false;
+  var vencimiento = new Date(anio, mes, 0); // ultimo dia del mes
+  return vencimiento >= new Date();
+}
+
+// valida el metodo de pago y sus datos antes de procesar la orden
+// se llama ANTES de tocar el stock o crear la orden
+function _validarPago(metodoPago, datosPago) {
+  // metodos que no necesitan datos adicionales
+  var metodosDirectos = ["transferencia", "efectivo"];
+  if (metodosDirectos.indexOf(metodoPago) != -1) {
+    return { ok: true, msg: "Pago aceptado" };
+  }
+
+  if (metodoPago == "tarjeta") {
+    if (!datosPago) {
+      return { ok: false, msg: "Se requieren datos de tarjeta" };
+    }
+    var numero = datosPago.numero || "";
+    var cvv    = datosPago.cvv    || "";
+    var expiry = datosPago.expiry || "";
+
+    // 16 digitos, solo numeros
+    if (numero.replace(/\s/g, "").length != 16 || isNaN(numero.replace(/\s/g, ""))) {
+      return { ok: false, msg: "Numero de tarjeta invalido" };
+    }
+    // CVV de 3 digitos
+    if (cvv.length != 3 || isNaN(cvv)) {
+      return { ok: false, msg: "CVV invalido" };
+    }
+    // fecha de expiracion
+    if (!_tarjetaVigente(expiry)) {
+      return { ok: false, msg: "Tarjeta vencida o fecha invalida" };
+    }
+    return { ok: true, msg: "Tarjeta validada" };
+  }
+
+  return { ok: false, msg: "Metodo de pago no reconocido: " + metodoPago };
 }
 
 // funcion inventario con numeros magicos aaa
