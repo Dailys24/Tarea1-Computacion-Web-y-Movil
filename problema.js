@@ -1361,66 +1361,54 @@ function sortOrders(arr6, field3, order3) {
 // HACK: esto funciona pero no se por que, no tocar
 // var weirdFix = x => x ? x : (x = [], x);
 
-// funciones de fecha/hora sin libreria y con logica embebida
-function formatDate(d4) {
-  var day = d4.getDate();
-  var month = d4.getMonth() + 1;
-  var year = d4.getFullYear();
-  var hours = d4.getHours();
-  var mins = d4.getMinutes();
-  var secs = d4.getSeconds();
-  if (day < 10) day = "0" + day;
-  if (month < 10) month = "0" + month;
-  if (hours < 10) hours = "0" + hours;
-  if (mins < 10) mins = "0" + mins;
-  if (secs < 10) secs = "0" + secs;
-  return day + "/" + month + "/" + year + " " + hours + ":" + mins + ":" + secs;
-}
-function formatDate2(d5) { // igual que la anterior
-  var day2 = d5.getDate();
-  var month2 = d5.getMonth() + 1;
-  var year2 = d5.getFullYear();
-  if (day2 < 10) day2 = "0" + day2;
-  if (month2 < 10) month2 = "0" + month2;
-  return day2 + "/" + month2 + "/" + year2;
-}
-function formatDate3(dateStr) { // otra variante
-  var parts = dateStr.split("-");
-  return parts[2] + "/" + parts[1] + "/" + parts[0];
-}
+function formatearFecha(fecha, incluirHora) {
+  var d = fecha;
+   //aqui se valida si la fecha es un string, (tiene quee ser con el formato año-mes-dia )
+  if (typeof fecha === "string") {
+    // Solucion sugerida por revision para evitar que JavaScript reste un dia por la zona horaria UTC
+    if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+      var partes = fecha.split("-");
+      var anioLocal = parseInt(partes[0], 10);
+      var mesLocal = parseInt(partes[1], 10);
+      var diaLocal = parseInt(partes[2], 10);
+      d = new Date(anioLocal, mesLocal - 1, diaLocal);
+    } else {
+      d = new Date(fecha);
+    }
+  } else {
+    // Si mandan algo vacio (null), forzamos a que sea fecha para que no explote abajo
+    d = new Date(fecha);
+  }
+//hasta aqui arriba fue sugerido en revisión
+  // Validar si javasript entiende La fecha 
+  if (isNaN(d.getTime())) {
+    return "Fecha inválida";
+  }
+  
+  var dia = d.getDate();
+  var mes = d.getMonth() + 1; // se agrega +1 porque en java se empieza a contar desde 0
+  var anio = d.getFullYear();
+    
+  //es para que se vea mejor si por ejemplo es un día 5 se vea 05
+  if (dia < 10) { dia = "0" + dia; }
+  if (mes < 10) { mes = "0" + mes; }
 
-// funcion de "utilidades" que hace 10 cosas diferentes
-function utils(op, val, val2, val3) {
-  if (op == "capitalize") {
-    return val.charAt(0).toUpperCase() + val.slice(1).toLowerCase();
+  var resultado = dia + "/" + mes + "/" + anio;
+
+  //es por si se quiere incluir la hora en el formato, se agrega al resultado final
+  if (incluirHora === true) {
+    var horas = d.getHours();
+    var minutos = d.getMinutes();
+    var segundos  = d.getSeconds();
+
+    if (horas < 10) { horas = "0" + horas; }
+    if (minutos < 10) { minutos = "0" + minutos; }
+    if (segundos < 10) { segundos = "0" + segundos; }
+
+    resultado = resultado + " " + horas + ":" + minutos + ":" + segundos;
   }
-  if (op == "truncate") {
-    return val.length > val2 ? val.substring(0, val2) + "..." : val;
-  }
-  if (op == "random") {
-    return Math.floor(Math.random() * (val2 - val + 1)) + val;
-  }
-  if (op == "slugify") {
-    return val.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "");
-  }
-  if (op == "deepClone") {
-    return JSON.parse(JSON.stringify(val));
-  }
-  if (op == "isEmptyObj") {
-    return Object.keys(val).length === 0;
-  }
-  if (op == "sumArray") {
-    var s = 0; for (var i = 0; i < val.length; i++) s += val[i]; return s;
-  }
-  if (op == "avgArray") {
-    var s2 = 0; for (var i = 0; i < val.length; i++) s2 += val[i]; return val.length > 0 ? s2 / val.length : 0;
-  }
-  if (op == "uniqueArray") {
-    var u = []; for (var i = 0; i < val.length; i++) { if (u.indexOf(val[i]) == -1) u.push(val[i]); } return u;
-  }
-  if (op == "flatArray") {
-    var f = []; for (var i = 0; i < val.length; i++) { if (Array.isArray(val[i])) { for (var j = 0; j < val[i].length; j++) f.push(val[i][j]); } else f.push(val[i]); } return f;
-  }
+
+  return resultado;
 }
 
 // exportar todo junto sin modularizacion
@@ -1450,8 +1438,10 @@ module.exports = {
   sortProducts: sortProducts,
   sortUsers: sortUsers,
   sortOrders: sortOrders,
-  formatDate: formatDate,
-  formatDate2: formatDate2,
-  formatDate3: formatDate3,
+  //se actualiza el formateo de fecha 
+  formatDate: formatearFecha,
+  formatDate2: formatearFecha,
+  formatDate3: formatearFecha,
+  formatearFecha: formatearFecha,
   utils: utils
 };
