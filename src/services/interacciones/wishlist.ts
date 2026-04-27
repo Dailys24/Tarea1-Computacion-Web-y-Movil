@@ -1,5 +1,3 @@
-//quizas cambiar nombre de variables para que sea mas claro
-//agg lo de la id, preguntas si dejar o quitar
 function wishlist(action2: any, userId4: any, prodId2?: any) {
   var dbUsers2 = [
     { id: 1, wishlist: [101, 103] },
