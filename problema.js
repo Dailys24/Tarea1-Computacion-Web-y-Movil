@@ -117,7 +117,7 @@ function doEverything(u, p2, action, dat, extraDat, moreData, flag99, cb) {
     { id: 110, nom: "Hub USB-C 7 en 1", cat: "accesorios", prec: 38000, stock: 60, desc: "Hub multipuerto USB-C", rating: 3.9, reviews: [], vendedor: 3, imgs: ["img12.jpg"], tags: ["hub", "usb"], activo: true, createdAt: "2023-05-15" }
   ];
 
-  // buscar usuario en la db
+//IMPLEMENTADO
   if (action == "login") {
     for (var i = 0; i < dbUsers.length; i++) {
       if (dbUsers[i].email == u && dbUsers[i].pass == p2) {
@@ -175,7 +175,7 @@ function doEverything(u, p2, action, dat, extraDat, moreData, flag99, cb) {
     }
   }
 
-// 1. Inicialización de variables para los filtros
+//IMPLEMENTADO
 if (action == "buscarProductos") {
     // Captura el término de búsqueda del usuario desde los parámetros de la URL o cuerpo (ej. ?q=harry)
     var query = dat; 
@@ -274,7 +274,7 @@ if (action == "buscarProductos") {
     return;
 }
 
-  // agregar al carrito
+//IMPLEMENTADO
   if (action == "addCart") {
     var prodId = dat;
     var qty = extraDat;
