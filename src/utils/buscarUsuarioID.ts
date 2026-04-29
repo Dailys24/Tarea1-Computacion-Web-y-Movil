@@ -1,15 +1,7 @@
-import { dbUsers } from '../db/dbUsuers.ts';
+import { dbUsers, type Usuario } from "../db/dbUsuers.ts";
 
-
-export function buscarUsuarioPorId(userId: number): any | null {
-  let usuario = dbUsers.find((u) => u.id === userId) || null;
-  if (!usuario) {
-    return null; // Retorna null si no se encuentra el usuario
-  }
-  return { ...usuario }; // Retorna una copia para evitar mutaciones externas
+// Devuelve la referencia al usuario en la DB (NO una copia), porque varias
+// operaciones (carrito, checkout, login) necesitan mutar el registro.
+export function buscarUsuarioPorId(userId: number): Usuario | null {
+  return dbUsers.find((u) => u.id === userId) ?? null;
 }
-
-
-const user = buscarUsuarioPorId(2);
-
-console.log("Usuario encontrado:", user);

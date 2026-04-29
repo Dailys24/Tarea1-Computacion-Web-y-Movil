@@ -1,6 +1,6 @@
-import { formatearPrecio } from "../utilidades/formatearPrecio.js";
-import { formateaEstrellasRating } from "../utilidades/formateaEstrellasRating.js";
-import {interfazProducto} from "../db/dbProducts.js"
+import { formatearPrecio } from "../utils/formatearPrecio.ts";
+import { formateaEstrellasRating } from "../utils/formateaEstrellasRating.ts";
+import { type interfazProducto } from "../db/dbProducts.ts";
 
 
 

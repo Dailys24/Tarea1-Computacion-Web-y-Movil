@@ -1,202 +1,270 @@
-import {buscarUsuarioPorId} from "../../utils/buscarUsuarioID.ts";
-import { dbProducts } from "../../db/dbProducts.ts";
+import { dbProducts, type interfazProducto } from "../../db/dbProducts.ts";
+import {
+  type CartItem,
+  type MetodoPago,
+  type Order,
+  type OrderItem,
+  type Usuario,
+} from "../../db/dbUsuers.ts";
+import { buscarUsuarioPorId } from "../../utils/buscarUsuarioID.ts";
 
-interface OrderItem {
-  prod: string;
-  qty: number;
-  precUnit: number;
-  totalItem: number;
-}
+// ============================================================================
+// Tipos públicos
+// ============================================================================
 
-interface CheckoutResult {
+// Resultado estándar de cualquier operación del carrito/checkout.
+// data?: T trae el detalle cuando ok === true.
+export interface Resultado<T = unknown> {
   ok: boolean;
   msg: string;
-  data?: {
-    orden: any;
-  };
+  data?: T;
 }
 
+export interface ResumenCarrito {
+  carrito: CartItem[];
+  total: number;
+}
 
-/**
- * Helper: Calcula el precio base (subtotal) y construye la lista de items
- * Usa Map para evitar el bucle anidado (O(n*m) -> O(n))
- */
-function calculateOrderDetails(userId: number): { subtotal: number; items: OrderItem[]; failed: boolean; msg: string } {
-  const foundUser = buscarUsuarioPorId(userId);
-  if (!foundUser) {
-    return { subtotal: 0, items: [], failed: true, msg: "usuario no encontrado" };
+export interface DatosTarjeta {
+  numero?: string;
+  cvv?: string;
+  expiry?: string;
+}
+
+export interface DatosCompra {
+  userId: number;
+  metodoPago: MetodoPago;
+  direccion: string;
+  datosTarjeta?: DatosTarjeta;
+}
+
+// ============================================================================
+// Helpers internos
+// ============================================================================
+
+function buscarProductoPorId(prodId: number): interfazProducto | null {
+  return dbProducts.find((p) => p.id === prodId) ?? null;
+}
+
+function calcularTotalCarrito(carrito: CartItem[]): number {
+  return carrito.reduce((acc, item) => {
+    const producto = buscarProductoPorId(item.prodId);
+    return producto ? acc + producto.prec * item.qty : acc;
+  }, 0);
+}
+
+// Tabla de descuentos por puntos. Reemplaza el if/if/if/if del problema.js
+function calcularDescuentoPorPuntos(puntos: number): number {
+  if (puntos >= 300) return 15;
+  if (puntos >= 200) return 10;
+  if (puntos >= 100) return 5;
+  return 0;
+}
+
+// Validación de pago. La de tarjeta exige número de 16 dígitos y CVV de 3.
+function validarPago(metodo: MetodoPago, datos?: DatosTarjeta): Resultado {
+  if (metodo === "transferencia" || metodo === "efectivo") {
+    return { ok: true, msg: "Pago aceptado" };
   }
-
-  if (foundUser.carrito.length === 0) {
-    return { subtotal: 0, items: [], failed: true, msg: "carrito vacio" };
-  }
-
-  const itemMap = new Map<number, any>(dbProducts.map((p) => [p.id, p]));
-  let subtotal = 0;
-  const items: OrderItem[] = [];
-
-  foundUser.carrito.forEach((cartItem) => {
-    const product = itemMap.get(cartItem.prodId);
-    // Si el producto fue eliminado del catálogo mientras se procesaba el carrito
-    if (!product) {
-      return { subtotal: 0, items: [], failed: true, msg: "producto eliminado durante proceso" };
+  if (metodo === "tarjeta") {
+    if (!datos) return { ok: false, msg: "Faltan datos de la tarjeta" };
+    const numero = (datos.numero ?? "").replace(/\s/g, "");
+    const cvv = datos.cvv ?? "";
+    if (numero.length !== 16 || !/^\d+$/.test(numero)) {
+      return { ok: false, msg: "Número de tarjeta inválido" };
     }
-
-    const itemTotal = product.precio * cartItem.qty;
-    subtotal += itemTotal;
-    items.push({
-      prod: product.nombre,
-      qty: cartItem.qty,
-      precUnit: product.precio,
-      totalItem: itemTotal,
-    });
-  });
-
-  return { subtotal, items, failed: false, msg: "calculos exitosos" };
+    if (cvv.length !== 3 || !/^\d+$/.test(cvv)) {
+      return { ok: false, msg: "CVV inválido" };
+    }
+    return { ok: true, msg: "Tarjeta válida" };
+  }
+  return { ok: false, msg: "Método de pago no reconocido" };
 }
 
-/**
- * Helper: Aplica reglas de descuento y calcula impuestos
- */
-function applyDiscounts(subtotal: number, user: any): { descuentoPct: number; descuentoMonto: number; totalSinIva: number; iva: number; total: number } {
-  // Tabla de descuentos por puntos para evitar largos if/else
-  let baseDiscountPct = 0;
-  const points = user.puntos || 0;
+// Si el usuario no puede operar, devuelve { ok:false, msg }. Si puede, devuelve null.
+// Tipar el "error" sin la T genérica de Resultado evita problemas de varianza
+// cuando lo usamos como early-return en funciones que retornan Resultado<X>.
+function chequearUsuario(usuario: Usuario): { ok: false; msg: string } | null {
+  if (!usuario.activo) return { ok: false, msg: "Usuario inactivo" };
+  if (usuario.bloqueado) return { ok: false, msg: "Usuario bloqueado" };
+  return null;
+}
 
-  if (points >= 300) baseDiscountPct = 15;
-  else if (points >= 200) baseDiscountPct = 10;
-  else if (points >= 100) baseDiscountPct = 5;
-  // else 0
+// ============================================================================
+// API pública del carrito
+// ============================================================================
 
-  // Descuento adicional personal
-  const totalDiscountPct = baseDiscountPct + (user.descuento || 0);
-  const discountAmount = subtotal * (totalDiscountPct / 100);
-  const finalBeforeTax = subtotal - discountAmount;
-  const iva = finalBeforeTax * 0.19;
-  const total = finalBeforeTax + iva;
+// Agrega `qty` unidades de `prodId` al carrito de `userId`.
+// Si el producto ya estaba en el carrito, suma cantidades.
+// Verifica stock contra (cantidad ya en carrito + qty nueva).
+export function agregarAlCarrito(
+  userId: number,
+  prodId: number,
+  qty: number,
+): Resultado<ResumenCarrito> {
+  if (!Number.isInteger(qty) || qty <= 0) {
+    return { ok: false, msg: "La cantidad debe ser un entero positivo" };
+  }
+
+  const usuario = buscarUsuarioPorId(userId);
+  if (!usuario) return { ok: false, msg: "Usuario no encontrado" };
+
+  const errorUsuario = chequearUsuario(usuario);
+  if (errorUsuario) return errorUsuario;
+
+  const producto = buscarProductoPorId(prodId);
+  if (!producto) return { ok: false, msg: "Producto no encontrado" };
+  if (!producto.activo) return { ok: false, msg: "Producto no disponible" };
+
+  const itemExistente = usuario.carrito.find((c) => c.prodId === prodId);
+  const cantidadFinal = (itemExistente?.qty ?? 0) + qty;
+
+  if (producto.stock < cantidadFinal) {
+    return {
+      ok: false,
+      msg: `Stock insuficiente (disponible: ${producto.stock}, solicitado: ${cantidadFinal})`,
+    };
+  }
+
+  if (itemExistente) {
+    itemExistente.qty = cantidadFinal;
+  } else {
+    usuario.carrito.push({ prodId, qty, addedAt: new Date() });
+  }
 
   return {
-    descuentoPct: totalDiscountPct,
-    descuentoMonto: discountAmount,
-    totalSinIva: finalBeforeTax,
-    iva,
-    total,
+    ok: true,
+    msg: "Producto agregado al carrito",
+    data: {
+      carrito: usuario.carrito,
+      total: calcularTotalCarrito(usuario.carrito),
+    },
   };
 }
 
-/**
- * Helper: Simula validación de pago
- */
-function validatePayment(method: string, extraData: any): boolean {
-  if (method === "tarjeta") {
-    // Simulación: extraData debe contener numero (16 dígitos) y cvv (3 dígitos)
-    const data = extraData || {};
-    if (!data.numero || data.numero.length !== 16) return false;
-    if (!data.cvv || data.cvv.length !== 3) return false;
-    return true;
-  }
-  // Transferencia y efectivo se aceptan siempre en este ejemplo
-  return true;
+// Quita por completo un producto del carrito (sin importar la cantidad).
+export function quitarDelCarrito(
+  userId: number,
+  prodId: number,
+): Resultado<ResumenCarrito> {
+  const usuario = buscarUsuarioPorId(userId);
+  if (!usuario) return { ok: false, msg: "Usuario no encontrado" };
+
+  const idx = usuario.carrito.findIndex((c) => c.prodId === prodId);
+  if (idx === -1) return { ok: false, msg: "Producto no está en el carrito" };
+
+  usuario.carrito.splice(idx, 1);
+  return {
+    ok: true,
+    msg: "Producto removido del carrito",
+    data: {
+      carrito: usuario.carrito,
+      total: calcularTotalCarrito(usuario.carrito),
+    },
+  };
 }
 
-/**
- * Función Principal: checkout
- */
-
-interface interfazCallback { 
-  ok:boolean,
-  msg:string,
-  data?: any
+// Devuelve el carrito actual del usuario y su total (lectura, no muta).
+export function verCarrito(userId: number): Resultado<ResumenCarrito> {
+  const usuario = buscarUsuarioPorId(userId);
+  if (!usuario) return { ok: false, msg: "Usuario no encontrado" };
+  return {
+    ok: true,
+    msg: "OK",
+    data: {
+      carrito: usuario.carrito,
+      total: calcularTotalCarrito(usuario.carrito),
+    },
+  };
 }
 
- interface formatoCompra {
-  idUser: number;
-  metodoPago: string;
-  direccion: string;
-  extraPaymentData?: any; // Para datos adicionales como info de tarjeta
-};
+// ============================================================================
+// Checkout / compra
+// ============================================================================
+// Flujo: validar usuario -> validar pago -> verificar stock real de cada item ->
+// calcular descuentos+IVA -> crear orden -> descontar stock -> sumar puntos ->
+// limpiar carrito -> persistir en historial.
+export function comprar(datos: DatosCompra): Resultado<Order> {
+  const usuario = buscarUsuarioPorId(datos.userId);
+  if (!usuario) return { ok: false, msg: "Usuario no encontrado" };
 
-let compraEjemplo: formatoCompra = {
-  idUser: 2,
-  metodoPago: "tarjeta",
-  direccion: "Calle Falsa 123",
-}
+  const errorUsuario = chequearUsuario(usuario);
+  if (errorUsuario) return errorUsuario;
 
-
-function comprar(compraEjemplo: formatoCompra ) : interfazCallback {
-
-  const metodoPago: string = compraEjemplo.metodoPago;
-  const direccion: string = compraEjemplo.direccion;
-  const extraPaymentData: any = compraEjemplo.extraPaymentData || null; // Extra para validar tarjeta
-
-  // 1. Encontrar usuario
-  const foundUser = buscarUsuarioPorId(compraEjemplo.idUser);
-  if (!foundUser) {
-    return { ok: false, msg: "usuario no encontrado", data: null };
-  }
-  //Validar Carrito 
-  if (foundUser.carrito.length === 0) {
-    return { ok: false, msg: "carrito vacio", data: null };
+  if (usuario.carrito.length === 0) {
+    return { ok: false, msg: "Carrito vacío" };
   }
 
-  // 2. Calcular detalles de la orden
-  const calculationResult = calculateOrderDetails(compraEjemplo.idUser);
-  if (calculationResult.failed) {
-    return { ok: false, msg: calculationResult.msg, data: null };
+  const validacionPago = validarPago(datos.metodoPago, datos.datosTarjeta);
+  if (!validacionPago.ok) return { ok: false, msg: validacionPago.msg };
+
+  // Construimos los items y calculamos subtotal.
+  // Si algún producto desapareció o no tiene stock, abortamos antes de mutar nada.
+  const items: OrderItem[] = [];
+  let subtotal = 0;
+
+  for (const cartItem of usuario.carrito) {
+    const producto = buscarProductoPorId(cartItem.prodId);
+    if (!producto) {
+      return {
+        ok: false,
+        msg: `El producto ${cartItem.prodId} ya no existe en el catálogo`,
+      };
+    }
+    if (!producto.activo) {
+      return { ok: false, msg: `"${producto.nom}" no está disponible` };
+    }
+    if (producto.stock < cartItem.qty) {
+      return {
+        ok: false,
+        msg: `Stock insuficiente para "${producto.nom}" (disponible: ${producto.stock})`,
+      };
+    }
+
+    const totalItem = producto.prec * cartItem.qty;
+    subtotal += totalItem;
+    items.push({
+      prodId: producto.id,
+      nom: producto.nom,
+      qty: cartItem.qty,
+      precUnit: producto.prec,
+      totalItem,
+    });
   }
 
-  // 3. Calcular descuentos e impuestos
-  const financials = applyDiscounts(calculationResult.subtotal, foundUser);
+  const descuentoPct =
+    calcularDescuentoPorPuntos(usuario.puntos) + (usuario.descuento ?? 0);
+  const descuentoMonto = subtotal * (descuentoPct / 100);
+  const totalSinIva = subtotal - descuentoMonto;
+  const iva = totalSinIva * 0.19;
+  const total = totalSinIva + iva;
+  const puntosGanados = Math.floor(total / 1000);
 
-  // 4. Procesar Pago
-  const pagoOk = validatePayment(metodoPago, extraPaymentData);
-  if (!pagoOk) {
-    return { ok: false, msg: "metodo de pago no valido", data: null };
-  }
-
-  // 5. Construir Objeto de Orden
-  const ordenId = `ORD-${Date.now()}`;
-  const orden = {
-    id: ordenId,
-    userId: compraEjemplo.idUser,
-    items: calculationResult.items,
-    subtotal: calculationResult.subtotal,
-    descuentoPct: financials.descuentoPct,
-    descuentoMonto: financials.descuentoMonto,
-    totalSinIva: financials.totalSinIva,
-    iva: financials.iva,
-    total: financials.total,
-    metodoPago,
-    direccion,
-    estado: "pagado", // Se marca como pagado tras la validación exitosa
-    puntosGanados: Math.floor(financials.total / 1000),
+  const orden: Order = {
+    id: `ORD-${Date.now()}`,
+    userId: datos.userId,
+    items,
+    subtotal,
+    descuentoPct,
+    descuentoMonto,
+    totalSinIva,
+    iva,
+    total,
+    metodoPago: datos.metodoPago,
+    direccion: datos.direccion,
+    estado: "pagado",
+    puntosGanados,
     createdAt: new Date(),
   };
 
-  // 6. Actualizar Estado del Sistema (Stock, Puntos, Carrito, Historial)
-  const itemsOrden = orden.items;
+  // Recién acá tocamos el estado del sistema (todo o nada).
+  for (const item of items) {
+    const producto = buscarProductoPorId(item.prodId);
+    if (producto) producto.stock -= item.qty;
+  }
+  usuario.puntos += puntosGanados;
+  usuario.carrito = [];
+  usuario.historial.push(orden);
 
-  // Ajustar Stock (Validando que no haya stock negativo por errores de concurrencia)
-  itemsOrden.forEach((item) => {
-    const product = dbProducts.find((p) => p.id === item.prodId);
-    if (product && product.stock >= item.qty) {
-      product.stock -= item.qty;
-    } else {
-      // Manejo de error si el stock cambió mientras procesábamos
-      console.error("Stock insuficiente inesperado para producto", item.prodId);
-    }
-  });
-
-  // Sumar puntos al usuario
-  foundUser.puntos += orden.puntosGanados;
-
-  // Limpiar carrito
-  foundUser.carrito = [];
-
-  // Registrar en historial
-  foundUser.historial.push(orden);
-
-  // 7. Retornar éxito
-  return { ok: true, msg: "orden creada exitosamente", data: orden };
-
+  return { ok: true, msg: "Orden creada exitosamente", data: orden };
 }
