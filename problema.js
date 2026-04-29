@@ -2,6 +2,7 @@
 // hecho por: juan
 // fecha: no se
 // version: final_v2_BUENO_este_si
+const utils = require('./core-utils.js');
 
 var x = [];
 var x2 = [];
@@ -103,7 +104,7 @@ function doEverything(u, p2, action, dat, extraDat, moreData, flag99, cb) {
     { id: 4, nombre: "Ana Martinez", email: "ana@mail.com", pass: "ana2024", tipo: "cliente", puntos: 50, descuento: 0, historial: [], carrito: [], wishlist: [], direcciones: [], metodoPago: [], activo: false, intentos: 3, bloqueado: true, ultimoLogin: null, createdAt: "2023-04-01", updatedAt: "2023-07-10" },
     { id: 5, nombre: "Carlos Ruiz", email: "carlos@mail.com", pass: "carlos99", tipo: "cliente", puntos: 300, descuento: 15, historial: [], carrito: [], wishlist: [], direcciones: [], metodoPago: [], activo: true, intentos: 0, bloqueado: false, ultimoLogin: null, createdAt: "2023-05-01", updatedAt: "2023-08-01" }
   ];
-  var dbProducts = [
+  export let dbProducts = [
     { id: 101, nom: "Laptop Pro 15", cat: "electronica", prec: 1200000, stock: 5, desc: "Laptop de alto rendimiento", rating: 4.5, reviews: [], vendedor: 3, imgs: ["img1.jpg", "img2.jpg"], tags: ["laptop", "computador", "pro"], activo: true, createdAt: "2023-01-15" },
     { id: 102, nom: "Mouse Inalambrico", cat: "accesorios", prec: 25000, stock: 50, desc: "Mouse ergonomico inalambrico", rating: 4.0, reviews: [], vendedor: 3, imgs: ["img3.jpg"], tags: ["mouse", "inalambrico"], activo: true, createdAt: "2023-01-20" },
     { id: 103, nom: "Teclado Mecanico RGB", cat: "accesorios", prec: 85000, stock: 20, desc: "Teclado mecanico con iluminacion RGB", rating: 4.8, reviews: [], vendedor: 3, imgs: ["img4.jpg", "img5.jpg"], tags: ["teclado", "mecanico", "rgb"], activo: true, createdAt: "2023-02-01" },
@@ -174,57 +175,104 @@ function doEverything(u, p2, action, dat, extraDat, moreData, flag99, cb) {
     }
   }
 
-  // buscar productos
-  if (action == "buscarProductos") {
-    var query = dat;
-    var cat = extraDat;
+// 1. Inicialización de variables para los filtros
+if (action == "buscarProductos") {
+    // Captura el término de búsqueda del usuario desde los parámetros de la URL o cuerpo (ej. ?q=harry)
+    var query = dat; 
+    
+    // Captura el nombre de la categoría deseada, si se envió
+    var cat = extraDat; 
+    
+    // Define los límites de precio si los hay (ej. ?min=10&max=100). 
+    // Si no se pasaron, usa 0 como mínimo y un número gigante (999999999) como máximo para permitir cualquier precio.
     var minP = moreData ? moreData.min : 0;
     var maxP = moreData ? moreData.max : 999999999;
+    
+    // Crea un array vacío llamado 'res' que irá guardando los productos que cumplan los criterios
     var res = [];
+    
+    // 2. Bucle principal: Recorre cada producto en la base de datos simulada (dbProducts)
     for (var i = 0; i < dbProducts.length; i++) {
-      var prod = dbProducts[i];
-      var match = false;
-      if (prod.activo == false) continue;
-      if (query && query != "" && query != null && query != undefined) {
-        if (prod.nom.toLowerCase().indexOf(query.toLowerCase()) != -1) {
-          match = true;
+        var prod = dbProducts[i]; // Asigna el producto actual al variable 'prod' para facilitar la lectura
+        
+        var match = false; // Bandera booleana: indica si el producto actual cumple con los filtros. Inicialmente se asume FALSO.
+        
+        // 3. Filtro de estado activo
+        if (prod.activo == false) continue; // Si el producto no está activo, salta el resto del chequeo y pasa al siguiente (continue).
+        
+        // 4. Lógica de búsqueda de texto (Query)
+        if (query && query != "" && query != null && query != undefined) { 
+            // Si el usuario escribió algo en el buscador...
+            
+            // 4.1. Verifica si el TÍTULO del producto contiene la búsqueda (insensible a mayúsculas/minúsculas)
+            if (prod.nom.toLowerCase().indexOf(query.toLowerCase()) != -1) {
+                match = true; // Si coincide, establece match en true.
+            }
+            
+            // 4.2. Verifica si la DESCRIPCIÓN contiene la búsqueda
+            if (prod.desc.toLowerCase().indexOf(query.toLowerCase()) != -1) {
+                match = true;
+            }
+            
+            // 4.3. Verifica si alguna ETIQUETA (TAG) coincide con la búsqueda
+            for (var j = 0; j < prod.tags.length; j++) {
+                // Compara cada tag del producto contra la consulta
+                if (prod.tags[j].toLowerCase().indexOf(query.toLowerCase()) != -1) {
+                    match = true; // Si alguna etiqueta coincide, es una coincidencia.
+                }
+            }
+            
+            // 5. Si el usuario NO escribió nada (query vacío), la búsqueda se considera un "match" automático para todos los productos.
+        } else {
+            match = true; 
         }
-        if (prod.desc.toLowerCase().indexOf(query.toLowerCase()) != -1) {
-          match = true;
+        
+        // 6. Filtro de Categoría (Opcional)
+        // Si se especificó una categoría Y esta no es vacía...
+        //CAT=categoria
+        if (cat && cat != "" && cat != null && cat != undefined) {
+            // ...Verifica si la categoría del producto NO ES igual a la buscada. 
+            // Si es diferente, quita el match.
+            if (prod.cat != cat) {
+                match = false;
+            }
         }
-        for (var j = 0; j < prod.tags.length; j++) {
-          if (prod.tags[j].toLowerCase().indexOf(query.toLowerCase()) != -1) {
-            match = true;
-          }
+        
+        // 7. Filtro de Precio (Opcional)
+        // Si el precio del producto es menor al mínimo O mayor al máximo definido...
+        if (prod.prec < minP || prod.prec > maxP) {
+            match = false; // No cumple los rangos de precio.
         }
-      } else {
-        match = true;
-      }
-      if (cat && cat != "" && cat != null && cat != undefined) {
-        if (prod.cat != cat) {
-          match = false;
+        
+        // 8. Conclusión del producto actual
+        // Si al final de todas las verificaciones 'match' sigue siendo true...
+        if (match == true) {
+            res.push(prod); // Añade el producto a la lista de resultados.
         }
-      }
-      if (prod.prec < minP || prod.prec > maxP) {
-        match = false;
-      }
-      if (match == true) {
-        res.push(prod);
-      }
     }
-    // ordenar por rating
+    
+    // 9. Algoritmo de Ordenamiento (Bubble Sort) por calificación (Rating)
+    // Esta implementación es ineficiente (O(n^2)) para listas largas, pero funciona para datos pequeños.
     for (var i = 0; i < res.length - 1; i++) {
-      for (var j = 0; j < res.length - i - 1; j++) {
-        if (res[j].rating < res[j + 1].rating) {
-          var tmp = res[j];
-          res[j] = res[j + 1];
-          res[j + 1] = tmp;
+        // Recorre la lista buscando la posición incorrecta
+        for (var j = 0; j < res.length - i - 1; j++) {
+            // Si el producto de la izquierda tiene menor rating que el de la derecha...
+            if (res[j].rating < res[j + 1].rating) {
+                // ...Intercambiamos sus posiciones (algoritmo de burbuja)
+                var tmp = res[j];
+                res[j] = res[j + 1];
+                res[j + 1] = tmp;
+            }
         }
-      }
     }
+    
+    // 10. Respuesta Final (Callback)
+    // Devuelve un objeto JSON al frontend indicando que fue OK, un mensaje simple y el array de productos ordenados.
     cb({ ok: true, msg: "ok", data: res });
+    
+    // 11. Salir de la función
     return;
-  }
+}
 
   // agregar al carrito
   if (action == "addCart") {
@@ -892,7 +940,7 @@ function renderProduct(p) {
   return html;
 }
 
-// funcion para procesar formulario de registro (sin separacion de responsabilidades)
+// funcion para procesar formulario de registro (sin separacion de responsabilidades)a
 function processRegistrationFormAndValidateAndSaveAndSendEmailAndLoginAndRedirect(formData) {
   // 1. validar campos
   var errors = [];
@@ -1101,46 +1149,100 @@ function reviews(action3, prodId3, userId5, rating2, comment, data4) {
   return { ok: false, msg: "accion invalida" };
 }
 
-// funcion de envio con logica embebida
+// funcion de envio con objeto de configuracion por ciudad
 function calcShipping(destCity, weight, dimensions, prodType, isUrgent, isFree, hasInsurance) {
-  // tasas hardcodeadas
-  var baseCost = 0;
-  var cityMult = 1;
-  var weightCost = 0;
-  var insuranceCost = 0;
-  var urgentCost = 0;
-  
-  if (destCity == "Santiago") cityMult = 1;
-  if (destCity == "Valparaiso") cityMult = 1.2;
-  if (destCity == "Concepcion") cityMult = 1.4;
-  if (destCity == "La Serena") cityMult = 1.6;
-  if (destCity == "Antofagasta") cityMult = 1.8;
-  if (destCity == "Iquique") cityMult = 2.0;
-  if (destCity == "Punta Arenas") cityMult = 2.5;
-  
-  // costo por peso
-  if (weight <= 1) weightCost = 2000;
-  if (weight > 1 && weight <= 5) weightCost = 3500;
-  if (weight > 5 && weight <= 10) weightCost = 5000;
-  if (weight > 10 && weight <= 20) weightCost = 8000;
-  if (weight > 20) weightCost = 12000;
-  
-  // tipo de producto
-  if (prodType == "fragil") weightCost = weightCost * 1.5;
-  if (prodType == "electronico") weightCost = weightCost * 1.3;
-  if (prodType == "normal") weightCost = weightCost * 1;
-  
-  baseCost = weightCost * cityMult;
-  
-  if (isUrgent == true) urgentCost = baseCost * 0.5;
-  if (hasInsurance == true) insuranceCost = baseCost * 0.1;
+
+  // objeto de configuracion: si se agrega una ciudad nueva, solo se toca aqui
+  var MULTIPLICADORES_CIUDAD = {
+    "Santiago":     1.0,
+    "Valparaiso":   1.2,
+    "Concepcion":   1.4,
+    "La Serena":    1.6,
+    "Antofagasta":  1.8,
+    "Iquique":      2.0,
+    "Punta Arenas": 2.5
+  };
+
+  var MULTIPLICADORES_TIPO = {
+    "fragil":      1.5,
+    "electronico": 1.3,
+    "normal":      1.0
+  };
+
+  // envio gratis tiene prioridad sobre todo lo demas
   if (isFree == true) return { costo: 0, desglose: "Envio gratis" };
-  
+
+  // ciudad desconocida usa multiplicador 1 como fallback
+  var cityMult = MULTIPLICADORES_CIUDAD[destCity] || 1.0;
+
+  // costo base segun peso
+  var weightCost = 0;
+  if (weight <= 1)        weightCost = 2000;
+  else if (weight <= 5)   weightCost = 3500;
+  else if (weight <= 10)  weightCost = 5000;
+  else if (weight <= 20)  weightCost = 8000;
+  else                    weightCost = 12000;
+
+  // ajuste segun tipo de producto
+  var typeMult = MULTIPLICADORES_TIPO[prodType] || 1.0;
+  weightCost = weightCost * typeMult;
+
+  var baseCost      = weightCost * cityMult;
+  var urgentCost    = isUrgent     ? baseCost * 0.50 : 0;
+  var insuranceCost = hasInsurance ? baseCost * 0.10 : 0;
+
   var total = baseCost + urgentCost + insuranceCost;
   return { costo: total, base: baseCost, urgente: urgentCost, seguro: insuranceCost };
 }
 
-// funcion inventario con numeros magicos
+// helper: verifica que la fecha de expiracion de la tarjeta no haya pasado
+// expiry viene como "MM/AA", ej: "03/27"
+function _tarjetaVigente(expiry) {
+  if (!expiry || expiry.indexOf("/") == -1) return false;
+  var partes = expiry.split("/");
+  var mes  = parseInt(partes[0], 10);
+  var anio = parseInt("20" + partes[1], 10); // "27" → 2027
+  if (isNaN(mes) || isNaN(anio) || mes < 1 || mes > 12) return false;
+  var vencimiento = new Date(anio, mes, 0); // ultimo dia del mes
+  return vencimiento >= new Date();
+}
+
+// valida el metodo de pago y sus datos antes de procesar la orden
+// se llama ANTES de tocar el stock o crear la orden
+function _validarPago(metodoPago, datosPago) {
+  // metodos que no necesitan datos adicionales
+  var metodosDirectos = ["transferencia", "efectivo"];
+  if (metodosDirectos.indexOf(metodoPago) != -1) {
+    return { ok: true, msg: "Pago aceptado" };
+  }
+
+  if (metodoPago == "tarjeta") {
+    if (!datosPago) {
+      return { ok: false, msg: "Se requieren datos de tarjeta" };
+    }
+    var numero = datosPago.numero || "";
+    var cvv    = datosPago.cvv    || "";
+    var expiry = datosPago.expiry || "";
+
+    // 16 digitos, solo numeros
+    if (numero.replace(/\s/g, "").length != 16 || isNaN(numero.replace(/\s/g, ""))) {
+      return { ok: false, msg: "Numero de tarjeta invalido" };
+    }
+    // CVV de 3 digitos
+    if (cvv.length != 3 || isNaN(cvv)) {
+      return { ok: false, msg: "CVV invalido" };
+    }
+    // fecha de expiracion
+    if (!_tarjetaVigente(expiry)) {
+      return { ok: false, msg: "Tarjeta vencida o fecha invalida" };
+    }
+    return { ok: true, msg: "Tarjeta validada" };
+  }
+
+  return { ok: false, msg: "Metodo de pago no reconocido: " + metodoPago };
+}
+
+// funcion inventario con numeros magicos aaa
 function checkInventory(prodId4) {
   var prods2 = [
     { id: 101, stock: 5 }, { id: 102, stock: 50 }, { id: 103, stock: 20 },
