@@ -1,0 +1,30 @@
+{
+  "name": "webmobil1",
+  "version": "1.0.0",
+  "description": "tarea1",
+  "keywords": [
+    "webmobil"
+  ],
+  "homepage": "https://github.com/Dailys24/Tarea1-Computacion-Web-y-Movil#readme",
+  "bugs": {
+    "url": "https://github.com/Dailys24/Tarea1-Computacion-Web-y-Movil/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dailys24/Tarea1-Computacion-Web-y-Movil.git"
+  },
+  "license": "ISC",
+  "author": "GaboGolCs",
+  "type": "module",
+  "main": "problema.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "prompt-sync": "^4.2.0",
+    "undici-types": "^7.19.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0"
+  }
+}
