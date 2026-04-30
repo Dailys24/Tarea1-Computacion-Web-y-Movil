@@ -1,8 +1,7 @@
 // src/utilidades/validaciones.ts
 import type {InterfaceCB} from "../utils/interfaces/interfaces.ts";
 
-export function validarCredito(numero: string, cvv: string): InterfaceCB {
-  // ... código existente anterior ...
+export function validarCredito(numero: string , cvv: string): InterfaceCB {
   if (numero.length !== 16 || !/^\d+$/.test(numero)) {
     return { ok: false, msg: "Número de tarjeta inválido", data: null };
   }

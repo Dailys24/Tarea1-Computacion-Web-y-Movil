@@ -1,8 +1,6 @@
-import { buscarUsuarioPorId } from "../../utils/buscarUsuarioID";
+import { buscarUsuarioPorId } from "../../utils/buscarUsuarioID.ts";
 import { dbProducts } from "../../db/dbProducts.ts";
-import { dbUsers } from "../../db/dbUsuers.ts";
 import type {InterfaceCB, CarritoItem, interfazProducto}  from "../../utils/interfaces/interfaces";
-import { validarCredito } from "../../utils/validaciones.ts";
 import { metodoPago } from "../../services/calc/metodoPago.ts";
 
 export function procesarPago(idUsuario: number, direccion: any, opcionMetodo: number): InterfaceCB {
@@ -40,8 +38,8 @@ export function procesarPago(idUsuario: number, direccion: any, opcionMetodo: nu
   }
 });
     // aplicar descuentos
-    var descuento = 0;
-    var descuentoMonto = 0;
+    let descuento = 0;
+    let descuentoMonto = 0;
     // descuento por nivel
     if (usuarioEncontrado.puntos >= 0 && usuarioEncontrado.puntos < 100) {
       descuento = 0;
@@ -61,15 +59,15 @@ export function procesarPago(idUsuario: number, direccion: any, opcionMetodo: nu
     // descuento adicional del usuario
     descuento = descuento + usuarioEncontrado.descuento;
     descuentoMonto = subtotal * (descuento / 100);
-    var totalConDescuento = subtotal - descuentoMonto;
+    let totalConDescuento = subtotal - descuentoMonto;
     // calcular iva
-    var iva = totalConDescuento * 0.19;
-    var totalFinal = totalConDescuento + iva;
+    let iva = totalConDescuento * 0.19;
+    let totalFinal = totalConDescuento + iva;
     // calcular puntos ganados
-    var puntosGanados = Math.floor(totalFinal / 1000);
+    let puntosGanados = Math.floor(totalFinal / 1000);
     // crear orden
-    var ordenId = "ORD-" + Date.now();
-    var orden = {
+    let ordenId = "ORD-" + Date.now();
+    let orden = {
       id: ordenId,
       userId: usuarioEncontrado.id,
       items: itemsOrden,
@@ -87,8 +85,8 @@ export function procesarPago(idUsuario: number, direccion: any, opcionMetodo: nu
     };
     // actualizar stock
     let itemsActualizados: interfazProducto[] = [];
-    for (var i = 0; i < usuarioEncontrado.carrito.length; i++) {
-      for (var j = 0; j < dbProducts.length; j++) {
+    for (let i = 0; i < usuarioEncontrado.carrito.length; i++) {
+      for (let j = 0; j < dbProducts.length; j++) {
         if (dbProducts[j].id == usuarioEncontrado.carrito[i].prodId) {
           dbProducts[j].stock = dbProducts[j].stock - usuarioEncontrado.carrito[i].cantidad;
           itemsActualizados.push(dbProducts[j]);

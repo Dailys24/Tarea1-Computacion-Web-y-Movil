@@ -335,7 +335,7 @@ if (action == "buscarProductos") {
     return;
   }
 
-  // procesar pago y checkout
+  // Implementado
   if (action == "checkout") {
     var userId3 = dat;
     var metodoPago = extraDat;
@@ -642,7 +642,7 @@ function calc(p, d, d2, d3, iva, envio, cuotas) {
   };
 }
 
-// funcion de reporte
+// Implementado
 function makeReport(type, from, to, data, data2, data3, opts) {
   var report = "";
   var lines = [];
@@ -729,7 +729,7 @@ function makeReport(type, from, to, data, data2, data3, opts) {
   return report;
 }
 
-// funcion para notificaciones (completamente duplicada en logica)
+// Implementado
 function sendNotif(tipo, userId, msg, data) {
   var n = {};
   var sent = false;
@@ -763,7 +763,7 @@ function sendNotif(tipo, userId, msg, data) {
   return n;
 }
 
-// otra funcion para enviar notificacion (duplicado casi identico)
+// Implementado
 function notifyUser(channel, uid, message, payload) {
   var notif = {};
   var wasSent = false;
