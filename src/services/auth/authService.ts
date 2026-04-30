@@ -1,25 +1,11 @@
-//src/services/auth/authService.js
-import { crearSesion, obtenerSesion, cerrarSesion } from "./sessionService.js"; //Importamos la función para crear sesiones seguras
-import crypto from 'node:crypto'; //Modulo nativo de Node.js para criptografia segura
-// Importa funciones de validación desde el módulo validaciones.js
-import  { validarEmail, validarPassword, validarRut, validarNombre, validarTelefono } from '../utilidades/validaciones.ts';
+import  { validarEmail, validarPassword, validarRut, validarNombre, validarTelefono } from '../../utils/validaciones.ts';
+import type { InterfazUsuario } from "../../utils/interfaces/interfaces.ts";
+import {dbUsers} from '../../db/dbUsuers.ts';
 
-//Funcion para crear el hash de la contraseña
-function hashearPassword(password) 
-{
-    //Usamos el algoritmo SHA-256 para transformar el texto plano
-    return crypto.createHash('sha256').update(password).digest('hex');
-}
-
-//Simulacion de base de datos (ahora las contraseñas estan hasheadas)
-const dbUsers = [
-    { id: 1, nombre: "Juan Perez", email: "juan@mail.com", pass: hashearPassword("1234"), tipo: "admin", puntos: 150, activo: true, intentos: 0, bloqueado: false, ultimoLogin: null },
-    { id: 4, nombre: "Ana Martinez", email: "ana@mail.com", pass: hashearPassword("ana2024"), tipo: "cliente", puntos: 50, activo: false, intentos: 3, bloqueado: true, ultimoLogin: null }
-];
 
 //Modulo de registro
 
-function validarDatosRegistro(formData) 
+function validarDatosRegistro(formData: any) 
 {
     const errors = [];
     
@@ -49,13 +35,13 @@ function validarDatosRegistro(formData)
     return errors; 
 }
 
-export function crearUsuario(formData) 
+export function crearUsuario(formData:any) 
 {
     return {
         id: Math.floor(Math.random() * 9000) + 1000,
         nombre: formData.nombre,
         email: formData.email,
-        pass: hashearPassword(formData.pass), //Guardamos el HASH, NUNCA el texto plano
+        pass: formData.pass, //Guardamos el HASH, NUNCA el texto plano
         rut: formData.rut,
         telefono: formData.telefono,
         tipo: "cliente",
@@ -71,7 +57,7 @@ export function crearUsuario(formData)
     };
 }
 
-export function procesarRegistro(formData){
+export function procesarRegistro(formData: any){
     const errores = validarDatosRegistro(formData);
     
     if (errores.length > 0)
@@ -85,7 +71,7 @@ export function procesarRegistro(formData){
 
 //Modulo de login
 
-export function procesarLogin(email, password) 
+export function procesarLogin(email: string, password: string) 
 {
     //Buscar al usuario solo por email
     const usuario = dbUsers.find(u => u.email === email);
@@ -106,32 +92,17 @@ export function procesarLogin(email, password)
         return { ok: false, msg: "Usuario inactivo. Contacte a soporte" };
     }
 
-    //Transformar la contraseña ingresada a hash para poder compararla
-    const hashIngresado = hashearPassword(password);
 
-    //Validar comparando HASH contra HASH
-    if (usuario.pass !== hashIngresado) 
-    {
-        usuario.intentos++; 
-        
-        if (usuario.intentos >= 3) 
-        {
-            usuario.bloqueado = true;
-            return { ok: false, msg: "Contraseña incorrecta. Cuenta bloqueada por seguridad" };
-        }
-        return { ok: false, msg: `Contraseña incorrecta. Intentos restantes: ${3 - usuario.intentos}` };
-    }
 
     //Login exitoso: Resetear intentos y generar sesion limpia
     usuario.intentos = 0; 
-    usuario.ultimoLogin = new Date().toISOString();
+    usuario.ultimoLogin = new Date();
     
-    const tokenSeguro = crearSesion(usuario);
+
 
     return {
         ok: true,
         msg: "Login exitoso",
-        token: tokenSeguro,
         user: { id: usuario.id, nombre: usuario.nombre, email: usuario.email }
     };
 }

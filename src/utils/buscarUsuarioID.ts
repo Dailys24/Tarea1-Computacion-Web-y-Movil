@@ -8,8 +8,3 @@ export function buscarUsuarioPorId(userId: number): any | null {
   }
   return { ...usuario }; // Retorna una copia para evitar mutaciones externas
 }
-
-
-const user = buscarUsuarioPorId(2);
-
-console.log("Usuario encontrado:", user);

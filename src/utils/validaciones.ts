@@ -1,4 +1,16 @@
 // src/utilidades/validaciones.ts
+import type {InterfaceCB} from "../utils/interfaces/interfaces.ts";
+
+export function validarCredito(numero: string , cvv: string): InterfaceCB {
+  if (numero.length !== 16 || !/^\d+$/.test(numero)) {
+    return { ok: false, msg: "Número de tarjeta inválido", data: null };
+  }
+  if (cvv.length !== 3 || !/^\d+$/.test(cvv)) {
+    return { ok: false, msg: "CVV inválido", data: null };
+  }
+  return { ok: true, msg: "Tarjeta válida", data: null };
+}
+
 
 export function validarEmail(email: unknown): boolean {
     if (typeof email !== 'string') return false;
