@@ -1,6 +1,6 @@
 Integrantes:
 Angelo González
-Grabriel Martinez
+Gabriel Martinez
 Diego Vera
 Carlos Linares
 Matias Lopez
